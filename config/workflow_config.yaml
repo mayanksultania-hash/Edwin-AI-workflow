@@ -1,0 +1,19 @@
+model:
+  provider: openai
+  name: gpt-4.1-mini
+  api_key_env_var: OPENAI_API_KEY
+  max_output_tokens: 1200
+
+generation:
+  output_language: typescript
+
+execution:
+  mode: mock
+  require_approval: false
+
+tools:
+  enabled:
+    - event_tool
+    - alert_tool
+    - servicenow_tool
+    - access_tool

@@ -1,0 +1,18 @@
+workflow:
+  name: tableau_access_request_workflow
+  version: v0.1
+  trigger:
+    type: natural_language
+    description: Give John Tableau access.
+  steps:
+    - id: request_access
+      tool: access_tool
+      action: request_access
+      inputs:
+        user: John
+        system: Tableau
+    - id: grant_access
+      tool: access_tool
+      action: grant_access
+      inputs:
+        request: $steps.request_access.access_request

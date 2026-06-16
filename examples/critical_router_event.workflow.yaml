@@ -1,0 +1,23 @@
+workflow:
+  name: critical_router_event_workflow
+  version: v0.1
+  trigger:
+    type: natural_language
+    description: When a critical router event happens, create an alert and ServiceNow incident.
+  steps:
+    - id: check_event
+      tool: event_tool
+      action: match_event
+      inputs:
+        severity: critical
+        source: router
+    - id: create_alert
+      tool: alert_tool
+      action: create_or_update_alert
+      inputs:
+        event: $steps.check_event.event
+    - id: notify_servicenow
+      tool: servicenow_tool
+      action: create_incident
+      inputs:
+        alert: $steps.create_alert.alert

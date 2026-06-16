@@ -1,0 +1,53 @@
+Create a workflow YAML for this request.
+
+Return only YAML.
+Do not include markdown fences.
+Do not include explanations.
+Use explicit step references when a later step needs data from an earlier step.
+
+Use this exact structure:
+
+workflow:
+  name: snake_case_workflow_name
+  version: v0.1
+  trigger:
+    type: natural_language
+    description: original user request
+  steps:
+    - id: snake_case_step_id
+      tool: tool_name
+      action: action_name
+      inputs:
+        key: value
+
+Reference format:
+
+- $steps.step_id.field_name
+- $context.field_name
+
+Example:
+
+steps:
+  - id: check_event
+    tool: event_tool
+    action: match_event
+  - id: create_alert
+    tool: alert_tool
+    action: create_or_update_alert
+    inputs:
+      event: $steps.check_event.event
+
+Allowed tools and actions:
+
+{{ allowed_tools }}
+
+Input hints:
+
+- access_tool.request_access should use user and system keys.
+- access_tool.request_access returns access_request and request.
+- access_tool.grant_access should use request from a previous access request step, for example $steps.request_access_step.request.
+- For dynamic values such as user, system, and resource, prefer $context.user and $context.system instead of hardcoded literal values when the MCP context exposes those keys.
+
+{{ orchestration_context }}
+User request:
+{{ user_request }}

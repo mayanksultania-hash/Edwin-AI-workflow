@@ -1,0 +1,38 @@
+Generated code verification task.
+
+Return only JSON.
+Do not include markdown fences.
+Do not include explanations.
+
+Review whether the generated code correctly implements the user request and workflow YAML.
+Focus on semantic correctness, missing steps, wrong inputs, unsafe-looking behavior, and whether the code is reasonable to execute with the configured mock tools.
+
+Use this exact structure:
+
+{
+  "approved": true,
+  "risk_level": "low",
+  "summary": "short summary",
+  "issues": []
+}
+
+Allowed risk levels:
+- low
+- medium
+- high
+
+Approve only when:
+- The generated code follows the workflow YAML.
+- The workflow YAML follows the user request.
+- Every workflow step appears in the generated code.
+- Step references and context references are semantically reasonable.
+- The code does not appear to perform unrelated or unsafe actions.
+
+User request:
+{{ user_request }}
+
+Workflow YAML:
+{{ workflow_yaml }}
+
+Generated code:
+{{ generated_code }}

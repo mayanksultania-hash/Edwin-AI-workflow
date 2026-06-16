@@ -1,0 +1,33 @@
+Intent detection task.
+
+Return only JSON.
+Do not include markdown fences.
+Do not include explanations.
+
+Use this exact structure:
+
+{
+  "name": "intent_name",
+  "domain": "domain_name",
+  "summary": "short summary",
+  "entities": {
+    "key": "value"
+  }
+}
+
+Common intent names:
+- access_request
+- incident_workflow
+- general_workflow
+
+Useful entity keys:
+- user
+- system
+- event_type
+- severity
+- source
+- alert_type
+- incident_type
+
+User request:
+{{ user_request }}

@@ -1,76 +1,27 @@
-# SPDX-FileCopyrightText: 2021, 2023, 2024 LogicMonitor, Inc.
-#
-# SPDX-License-Identifier: LicenseRef-All-rights-reserved
-
-[build-system]
-requires = ["pdm-backend"]
-build-backend = "pdm.backend"
-
 [project]
-name = "logicmonitor-dexda-example"
-version = "0.0.0"
-description = "Example."
-readme = "README.rst"
-requires-python = "~=3.12"
-license = {file = "LICENSES/LicenseRef-All-rights-reserved.txt"}
-authors = [{name = "logicmonitor-dexda-example authors"}]
-maintainers = [{name = "logicmonitor-dexda-example maintainers"}]
-classifiers = [
-    "Private :: Do Not Upload",
-    "License :: Other/Proprietary License",
-]
+name = "ai-workflow"
+version = "0.1.0"
+description = "Simple modular AI workflow project"
+requires-python = ">=3.12"
 dependencies = [
-    "typer~=0.9.0",
-]
-
-[project.optional-dependencies]
-# Consists of 3rd-party imports and called modules from tasks.py.
-build = [
-    "build~=1.0",
-    "invoke~=2.1",
-    "nox>=2020.5.24",
-    "pip~=24.0",
-    "pygit2~=1.2",
-    "python-dotenv~=1.0",
-    "semantic-version~=2.8",
-    "tomlkit~=0.11.0",
-    "twine~=5.0",
-    "urllib3~=2.0",
-]
-# Consists of 3rd-party imports and called modules from noxfile.py and
-# test/test_*.py, and available external types for untyped 3rd-party imports
-# from tasks.py.
-test = [
-    "bandit~=1.7",
-    "coverage[toml]~=7.4",
-    "mypy~=1.8",
-    "nox>=2020.5.24",
-    "packaging~=24.0",
-    "pycodestyle~=2.11",
-    "pydocstyle[toml]~=6.3",
-    "pylint~=3.1",
-    "pytest~=8.0",
-    "pytest-mock~=3.12",
-    "python-dotenv~=1.0",
-    "tomlkit~=0.11.0",
+    "jinja2>=3.1.0",
+    "openai>=2.41.1",
+    "pytest>=9.1.0",
+    "streamlit>=1.58.0",
 ]
 
 [project.scripts]
-example = "logicmonitor.dexda.example.app:app"
+ai-workflow = "ai_workflow.main:main"
 
-[project.urls]
-homepage = "https://gitlab.com/dexda/ops/logicmonitor-dexda-example"
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
 
-[tool.coverage.run]
-source = [
-    "logicmonitor.dexda.example"
-]
+[tool.setuptools.packages.find]
+where = ["src"]
 
-[tool.pdm]
-distribution = true
+[tool.setuptools.package-data]
+ai_workflow = ["**/*.j2"]
 
-[tool.pdm.build]
-includes = ["src"]
-
-[tool.pylint."messages control"]
-extension-pkg-whitelist = "pydantic"
+[tool.pytest.ini_options]
+testpaths = ["tests"]

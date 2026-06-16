@@ -1,0 +1,37 @@
+Plan creation task.
+
+Return only JSON.
+Do not include markdown fences.
+Do not include explanations.
+
+Use this exact structure:
+
+{
+  "steps": [
+    {
+      "order": 1,
+      "goal": "short step goal",
+      "tool": "tool_name",
+      "action": "action_name",
+      "inputs": {
+        "key": "value"
+      }
+    }
+  ]
+}
+
+Allowed tools and actions:
+{{ actions }}
+
+Intent:
+- name: {{ intent.name }}
+- domain: {{ intent.domain }}
+- summary: {{ intent.summary }}
+- entities: {{ intent.entities }}
+
+MCP context:
+- source: {{ mcp_context.source }}
+- values: {{ mcp_context.values }}
+
+User request:
+{{ user_request }}
