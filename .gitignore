@@ -1,0 +1,16 @@
+# SPDX-FileCopyrightText: 2024 LogicMonitor, Inc.
+#
+# SPDX-License-Identifier: LicenseRef-All-rights-reserved
+
+.coverage
+.env
+.mypy_cache/
+.nox/
+.pdm-build/
+.pdm-python
+.pytest_cache/
+.venv/
+__pycache__/
+build/
+dist/
+/pdm.toml

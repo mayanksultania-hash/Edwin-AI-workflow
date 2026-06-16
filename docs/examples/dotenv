@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: 2024 LogicMonitor, Inc.
+#
+# SPDX-License-Identifier: LicenseRef-All-rights-reserved
+
+PRIVATE_PYPI_REPO_URL=https://example.invalid
+PRIVATE_PYPI_REPO_USERNAME=example
+PRIVATE_PYPI_REPO_PASSWORD=example
+PRIVATE_CONTAINER_IMG_REPO_REGISTRY=example.invalid
+PRIVATE_CONTAINER_IMG_REPO_NS=example
+PRIVATE_CONTAINER_IMG_REPO_USERNAME=example
+PRIVATE_CONTAINER_IMG_REPO_PASSWORD=example

@@ -1,0 +1,14 @@
+..
+   SPDX-FileCopyrightText: 2024 LogicMonitor, Inc.
+
+   SPDX-License-Identifier: LicenseRef-All-rights-reserved
+
+=============
+Example title
+=============
+
+Example description.
+
+.. contents::
+   :local:
+   :backlinks: none
