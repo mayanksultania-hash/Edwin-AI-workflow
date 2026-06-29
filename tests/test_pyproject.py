@@ -11,6 +11,15 @@ def test_pyproject_defines_cli_entrypoint():
     assert data["project"]["scripts"]["ai-workflow"] == "ai_workflow.main:main"
 
 
+def test_pyproject_defines_streamlit_entrypoint():
+    data = tomllib.loads((PROJECT_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+
+    assert (
+        data["project"]["scripts"]["ai-workflow-ui"]
+        == "ai_workflow.ui.streamlit_app:main"
+    )
+
+
 def test_pyproject_uses_src_package_layout():
     data = tomllib.loads((PROJECT_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
 

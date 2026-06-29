@@ -19,6 +19,11 @@ from ai_workflow.config.constants import (
 from ai_workflow.config.models import WorkflowConfig
 
 
+SUPPORTED_ACTION_CATALOG_SOURCES = ("static", "http")
+SUPPORTED_ACTION_FIELDS_SOURCES = ("static", "file")
+SUPPORTED_ACTION_SERVICE_SUBMIT_MODES = ("disabled", "http")
+
+
 def load_yaml_config(config_path: Path = DEFAULT_CONFIG_PATH) -> dict[str, Any]:
     if not config_path.exists():
         raise FileNotFoundError(f"Config file not found: {config_path}")
@@ -84,11 +89,27 @@ def load_config(
     version = load_version(version_path)
 
     model_config = raw_config.get("model", {})
+    action_catalog_config = raw_config.get("action_catalog", {})
+    action_fields_config = raw_config.get("action_fields", {})
+    action_service_config = raw_config.get("action_service", {})
     output_language = raw_config.get("generation", {}).get("output_language", "python")
     execution_mode = raw_config.get("execution", {}).get("mode", "mock")
     max_output_tokens = _optional_positive_int(
         model_config.get("max_output_tokens"),
         "model.max_output_tokens",
+    )
+    action_catalog_source = action_catalog_config.get("source", "static")
+    action_fields_source = action_fields_config.get("source", "static")
+    action_service_submit_mode = action_service_config.get("submit_mode", "disabled")
+    action_catalog_timeout_seconds = _optional_positive_float(
+        action_catalog_config.get("timeout_seconds"),
+        "action_catalog.timeout_seconds",
+        default=10.0,
+    )
+    action_service_timeout_seconds = _optional_positive_float(
+        action_service_config.get("timeout_seconds"),
+        "action_service.timeout_seconds",
+        default=10.0,
     )
 
     if output_language not in SUPPORTED_LANGUAGES:
@@ -96,6 +117,19 @@ def load_config(
 
     if execution_mode not in SUPPORTED_EXECUTION_MODES:
         raise ValueError(f"Unsupported execution mode: {execution_mode}")
+
+    if action_catalog_source not in SUPPORTED_ACTION_CATALOG_SOURCES:
+        raise ValueError(f"Unsupported action catalog source: {action_catalog_source}")
+
+    if action_fields_source not in SUPPORTED_ACTION_FIELDS_SOURCES:
+        raise ValueError(f"Unsupported action fields source: {action_fields_source}")
+
+    if action_service_submit_mode not in SUPPORTED_ACTION_SERVICE_SUBMIT_MODES:
+        raise ValueError(f"Unsupported action service submit mode: {action_service_submit_mode}")
+
+    action_service_base_url = _optional_string(action_service_config.get("base_url"))
+    if action_service_submit_mode == "http" and not action_service_base_url:
+        raise ValueError("action_service.base_url is required when submit_mode is http")
 
     return WorkflowConfig(
         model_provider=model_config.get("provider", "mock"),
@@ -109,6 +143,30 @@ def load_config(
         workflow_version=version,
         execution_mode=execution_mode,
         enabled_tools=tuple(raw_config.get("tools", {}).get("enabled", [])),
+        action_catalog_source=action_catalog_source,
+        action_catalog_base_url=_optional_string(action_catalog_config.get("base_url")),
+        action_catalog_auth_token_env_var=_optional_string(
+            action_catalog_config.get("auth_token_env_var")
+        ),
+        action_catalog_timeout_seconds=action_catalog_timeout_seconds,
+        action_fields_source=action_fields_source,
+        action_fields_paths=tuple(_optional_string_list(action_fields_config.get("paths", []))),
+        action_fields_extra_fields=tuple(
+            _optional_string_list(action_fields_config.get("extra_fields", []))
+        ),
+        action_fields_wildcard_prefixes=tuple(
+            _optional_string_list(action_fields_config.get("wildcard_prefixes", []))
+        ),
+        action_service_submit_mode=action_service_submit_mode,
+        action_service_base_url=action_service_base_url,
+        action_service_submit_endpoint=action_service_config.get(
+            "submit_endpoint",
+            "/action/group",
+        ),
+        action_service_auth_token_env_var=_optional_string(
+            action_service_config.get("auth_token_env_var")
+        ),
+        action_service_timeout_seconds=action_service_timeout_seconds,
     )
 
 
@@ -125,3 +183,44 @@ def _optional_positive_int(value: Any, field_name: str) -> int | None:
         raise ValueError(f"{field_name} must be a positive integer")
 
     return int_value
+
+
+def _optional_positive_float(
+    value: Any,
+    field_name: str,
+    default: float,
+) -> float:
+    if value in (None, ""):
+        return default
+
+    try:
+        float_value = float(value)
+    except (TypeError, ValueError) as error:
+        raise ValueError(f"{field_name} must be a positive number") from error
+
+    if float_value <= 0:
+        raise ValueError(f"{field_name} must be a positive number")
+
+    return float_value
+
+
+def _optional_string(value: Any) -> str | None:
+    if value in (None, ""):
+        return None
+
+    return str(value)
+
+
+def _optional_string_list(value: Any) -> list[str]:
+    if value in (None, "", "[]"):
+        return []
+    if not isinstance(value, list):
+        raise ValueError("Expected a list of strings")
+
+    values: list[str] = []
+    for item in value:
+        if not isinstance(item, str) or not item.strip():
+            raise ValueError("Expected a list of non-empty strings")
+        values.append(item.strip())
+
+    return values

@@ -7,6 +7,8 @@ SRC_ROOT = PROJECT_ROOT / "src"
 sys.path.insert(0, str(SRC_ROOT))
 
 from ai_workflow.models.execution import StepExecution, WorkflowExecution
+from ai_workflow.models.action_group import ActionGroup
+from ai_workflow.models.action_service import ActionServiceSubmitResult
 from ai_workflow.models.orchestration import (
     CodeVerification,
     Intent,
@@ -18,6 +20,9 @@ from ai_workflow.models.run import WorkflowRunResult
 from ai_workflow.models.tool_manifest import ToolActionManifest, ToolManifest
 from ai_workflow.models.workflow import Step, Trigger, Workflow
 from ai_workflow.ui.streamlit_app import (
+    action_group_general_summary,
+    action_group_steps_table,
+    action_service_submit_summary,
     code_verification_summary,
     dry_run_summary,
     execution_steps_table,
@@ -126,6 +131,101 @@ def test_plan_steps_table_returns_display_rows():
             "inputs": {"event_type": "$context.event_type"},
         }
     ]
+
+
+def test_action_group_general_summary_returns_display_data():
+    action_group = ActionGroup.from_dict(
+        {
+            "action_group": {
+                "name": "Incident Processing v3.0",
+                "description": "Process incidents",
+                "source": "sncIncident",
+                "rule": None,
+                "steps": [
+                    {
+                        "order": 1,
+                        "id": "update_incident",
+                        "action_type": "Update SNC Incident",
+                        "name": "Update Incident",
+                        "description": "Update Incident",
+                    }
+                ],
+            }
+        }
+    )
+
+    assert action_group_general_summary(action_group) == {
+        "name": "Incident Processing v3.0",
+        "description": "Process incidents",
+        "source": "sncIncident",
+        "rule": None,
+        "steps": 1,
+        "has_group_condition": False,
+    }
+
+
+def test_action_group_steps_table_returns_display_rows():
+    action_group = ActionGroup.from_dict(
+        {
+            "action_group": {
+                "name": "Incident Processing v3.0",
+                "description": "Process incidents",
+                "source": "sncIncident",
+                "rule": None,
+                "steps": [
+                    {
+                        "order": 1,
+                        "id": "update_incident",
+                        "action_type": "Update SNC Incident",
+                        "name": "Update Incident",
+                        "description": "Update Incident",
+                        "config": {"retries": 3},
+                        "mapped_fields": [
+                            {
+                                "target": "State",
+                                "mappings": [{"type": "value", "value": "In Progress"}],
+                            }
+                        ],
+                    }
+                ],
+            }
+        }
+    )
+
+    assert action_group_steps_table(action_group) == [
+        {
+            "order": 1,
+            "action_type": "Update SNC Incident",
+            "name": "Update Incident",
+            "start_condition": False,
+            "stop_condition": False,
+            "mapped_fields": 1,
+            "config": {"retries": 3},
+        }
+    ]
+
+
+def test_action_service_submit_summary_returns_preview_status():
+    assert action_service_submit_summary(None) == {
+        "submitted": False,
+        "message": "Preview only. Submit was not requested.",
+    }
+
+
+def test_action_service_submit_summary_returns_submit_result():
+    result = ActionServiceSubmitResult(
+        submitted=True,
+        status_code=201,
+        response_body={"id": "created"},
+        message="created",
+    )
+
+    assert action_service_submit_summary(result) == {
+        "submitted": True,
+        "status_code": 201,
+        "response_body": {"id": "created"},
+        "message": "created",
+    }
 
 
 def test_code_verification_summary_returns_display_data():

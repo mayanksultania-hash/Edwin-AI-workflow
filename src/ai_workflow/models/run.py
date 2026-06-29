@@ -12,6 +12,12 @@ from ai_workflow.models.orchestration import (
     WorkflowPlan,
 )
 from ai_workflow.models.output import GeneratedOutputPaths
+from ai_workflow.models.output import (
+    ActionGroupOutputPaths,
+    ActionServiceJsonOutputPaths,
+)
+from ai_workflow.models.action_group import ActionGroup
+from ai_workflow.models.action_service import ActionServiceSubmitResult
 from ai_workflow.models.workflow import Workflow
 
 
@@ -27,3 +33,13 @@ class WorkflowRunResult:
     code_verification: Optional[CodeVerification] = None
     audit_path: Optional[Path] = None
     output_paths: Optional[GeneratedOutputPaths] = None
+
+
+@dataclass(frozen=True)
+class ActionGroupRunResult:
+    action_group: ActionGroup
+    action_group_yaml: str
+    action_service_json: dict
+    action_group_output_paths: Optional[ActionGroupOutputPaths] = None
+    action_service_json_output_paths: Optional[ActionServiceJsonOutputPaths] = None
+    submit_result: Optional[ActionServiceSubmitResult] = None

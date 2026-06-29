@@ -1,0 +1,207 @@
+Create an Action Group YAML for this request.
+
+Return only YAML.
+Do not include markdown fences.
+Do not include explanations.
+Stay close to the Action UI structure: General, ordered Actions, Start Condition, Stop condition, Action Config, and Mapped Fields.
+
+Use this exact top-level structure:
+
+action_group:
+  name: action group name
+  description: short description
+  source: one allowed source type
+  rule:
+  group_condition:
+    operator: allowed operator key, AND, or OR
+    conditions:
+      - record: record type
+        field: field name
+        operator: allowed operator key
+        value: value
+  steps:
+    - order: 1
+      id: snake_case_step_id
+      action_type: one allowed action type
+      name: user-facing step name
+      description: user-facing step description
+      start_condition:
+        operator: AND
+        conditions:
+          - record: record type
+            field: field name
+            operator: allowed operator key
+            value: value
+      stop_condition:
+        operator: OR
+        conditions:
+          - record: action_outcome
+            field: outcome
+            operator: EQUALS
+            value: exact action outcome
+      config:
+        config_key: config_value
+      mapped_fields:
+        - target: target field
+          mappings:
+            - type: value
+              value: fixed value
+      use_additional_records: true
+      preload: record type
+
+Rules:
+
+- Keep steps flat and ordered, like the Action UI list.
+- Use group_condition for the Action Group's top-level filter.
+- Use start_condition only when a specific action row should run conditionally.
+- Create enough ordered steps to match the user's requested business process.
+- If the request names an existing-style process, produce the full process shape, not only the first one or two actions.
+- Use repeated action types when needed.
+- Use condition operator keys, not UI labels. Example: use EQUALS, not Equals.
+- Use only allowed source types.
+- Use only allowed action types.
+- Use only allowed condition operators.
+- Use only allowed field paths for condition fields, mapped field targets, and mapped variables.
+- Use only allowed mapping types.
+- Leave optional sections out when they are not needed.
+- Do not invent action IDs, schema versions, or final Action Service JSON.
+- This output is intermediate YAML only.
+
+Allowed source types:
+{{ source_types }}
+
+Allowed action types:
+{{ action_names }}
+
+Allowed condition operators:
+{{ condition_operators }}
+
+Allowed mapping types:
+{{ mapping_types }}
+
+Allowed field paths:
+{{ field_paths }}
+
+Allowed wildcard field prefixes:
+{{ field_wildcard_prefixes }}
+
+Action UI pattern examples:
+
+Example 1: Incident Processing style
+
+Use this pattern when the user asks to process ServiceNow incident updates, reopen incidents, store incident details, or create an Incident Processing action group.
+
+action_group:
+  name: Incident Processing v3.0
+  description: Default action group to process ServiceNow incident updates sent from the LM-DX application
+  source: sncIncident
+  rule:
+  group_condition:
+    operator: EQUALS
+    conditions:
+      - record: sncIncident
+        field: State
+        operator: EQUALS
+        value: Resolved
+  steps:
+    - order: 1
+      id: lookup_incident_reference
+      action_type: Lookup internal rowkey
+      name: Lookup Incident reference
+      description: Lookup Incident reference
+    - order: 2
+      id: store_incident_details_in_insight
+      action_type: Update Insight
+      name: Store Incident details in Insight
+      description: Store Incident details in Insight
+    - order: 3
+      id: wait_if_incident_resolved_and_insight_active
+      action_type: Delay Action Execution
+      name: Wait for 5 min if Incident is Resolved and Insight is Active
+      description: Wait for 5 min if Incident is Resolved and Insight is Active
+      config:
+        delay_minutes: 5
+    - order: 4
+      id: reopen_incident_if_insight_state_is_active
+      action_type: Update SNC Incident
+      name: Re-open Incident If Insight State is Active
+      description: Re-open Incident If Insight State is Active
+      start_condition:
+        operator: AND
+        conditions:
+          - record: actionsystem
+            field: Last Action Outcome
+            operator: EQUALS
+            value: Delay Completed
+          - record: sncIncident
+            field: State
+            operator: EQUALS
+            value: Resolved
+          - record: insights
+            field: State
+            operator: EQUALS
+            value: active
+          - record: insights
+            field: Severity
+            operator: GREATER_THAN
+            value: Warning
+      mapped_fields:
+        - target: State
+          mappings:
+            - type: value
+              value: In Progress
+    - order: 5
+      id: store_incident_details_in_alert
+      action_type: Update Alert
+      name: Store Incident details in Alert
+      description: Store Incident details in Alert
+    - order: 6
+      id: wait_if_incident_resolved_and_alert_active
+      action_type: Delay Action Execution
+      name: Wait for 5 min if Incident is Resolved and Alert is Active
+      description: Wait for 5 min if Incident is Resolved and Alert is Active
+      config:
+        delay_minutes: 5
+    - order: 7
+      id: reopen_incident_if_singleton_alert_state_is_active
+      action_type: Update SNC Incident
+      name: Re-open Incident If Singleton Alert State is Active
+      description: Re-open Incident If Singleton Alert State is Active
+    - order: 8
+      id: store_incident_details_in_additional_alerts
+      action_type: Update Alert
+      name: Store Incident details in additional Alerts
+      description: Store Incident details in additional Alerts
+
+Example 2: Close Insight style
+
+Use this pattern when the user asks to close an insight and update related alerts.
+
+action_group:
+  name: Close Insight v3.0
+  description: Default action group to close an insight and its correlated alerts and update closed by information
+  source: insights
+  rule:
+  steps:
+    - order: 1
+      id: set_escalation_to_closed
+      action_type: Update Insight
+      name: Set Escalation to "closed"
+      description: Set Escalation to "closed"
+      start_condition:
+        operator: AND
+        conditions:
+          - record: insights
+            field: Escalation
+            operator: NOT_EQUALS
+            value: closed
+      config:
+        add_additional_alerts: true
+    - order: 2
+      id: close_correlated_alerts
+      action_type: Update Alert
+      name: Close correlated alerts
+      description: Close correlated alerts
+
+User request:
+{{ user_request }}

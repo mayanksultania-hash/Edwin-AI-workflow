@@ -145,8 +145,34 @@ execution result, and file paths.
 ## Run Streamlit
 
 ```bash
+.venv/bin/ai-workflow-ui
+```
+
+If the script is not installed yet, use:
+
+```bash
 .venv/bin/python -m streamlit run src/ai_workflow/ui/streamlit_app.py
 ```
+
+For a simple demo:
+
+1. Select `Action Group`.
+2. Use this request:
+
+```text
+Create an Incident Processing action group for ServiceNow incident updates
+```
+
+3. Click `Generate action group`.
+4. Show these tabs:
+   - `General`
+   - `Actions`
+   - `Action Group YAML`
+   - `Action Service JSON`
+   - `Submit Result`
+
+Keep `Approve and submit Action Service JSON` unchecked for demo mode. The default
+config is preview-only and does not call Action Service.
 
 ## Run tests
 

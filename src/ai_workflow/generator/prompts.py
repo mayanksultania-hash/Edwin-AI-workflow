@@ -1,7 +1,11 @@
 """Prompts for workflow generation."""
 
-from ai_workflow.models.tool_manifest import ToolManifest
+from ai_workflow.mcp.action_ui_context import (
+    ActionUiContext,
+    build_default_action_ui_context,
+)
 from ai_workflow.models.orchestration import Intent, MCPContext, WorkflowPlan
+from ai_workflow.models.tool_manifest import ToolManifest
 from ai_workflow.prompting.template_renderer import render_prompt_template
 from ai_workflow.tools.tool_manifest import (
     build_default_tool_manifest,
@@ -29,6 +33,25 @@ def build_workflow_generation_prompt(
         {
             "allowed_tools": allowed_tools,
             "orchestration_context": orchestration_context,
+            "user_request": user_request,
+        },
+    )
+
+
+def build_action_group_generation_prompt(
+    user_request: str,
+    action_ui_context: ActionUiContext | None = None,
+) -> str:
+    context = action_ui_context or build_default_action_ui_context()
+    return render_prompt_template(
+        "generator/templates/action_group_generation.j2",
+        {
+            "action_names": _format_lines(context.catalog.action_names()),
+            "condition_operators": _format_lines(context.condition_operator_prompt_lines),
+            "field_paths": _format_lines(context.field_catalog.fields),
+            "field_wildcard_prefixes": _format_lines(context.field_catalog.wildcard_prefixes),
+            "mapping_types": _format_lines(context.mapping_types),
+            "source_types": _format_lines(context.source_types),
             "user_request": user_request,
         },
     )
@@ -69,3 +92,7 @@ def _format_orchestration_context(
         lines.append("")
 
     return "\n".join(lines)
+
+
+def _format_lines(values: tuple[str, ...]) -> str:
+    return "\n".join(f"- {value}" for value in values)

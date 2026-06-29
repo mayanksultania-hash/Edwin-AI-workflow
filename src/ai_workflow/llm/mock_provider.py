@@ -18,6 +18,8 @@ class MockLLMProvider(BaseLLMProvider):
             text = _build_mock_plan_json(user_request)
         elif "Generated code verification task." in request.prompt:
             text = _build_mock_code_verification_json()
+        elif "Create an Action Group YAML for this request." in request.prompt:
+            text = _build_mock_action_group_yaml()
         else:
             text = _build_mock_workflow_yaml(user_request)
 
@@ -168,6 +170,73 @@ def _build_mock_workflow_yaml(prompt: str) -> str:
       action: create_incident
       inputs:
         alert: $steps.create_alert.alert
+"""
+
+
+def _build_mock_action_group_yaml() -> str:
+    return """action_group:
+  name: Incident Processing v3.0
+  description: Default action group to process ServiceNow incident updates sent from the LM-DX application
+  source: sncIncident
+  rule:
+  steps:
+    - order: 1
+      id: lookup_incident_reference
+      action_type: Lookup internal rowkey
+      name: Lookup Incident reference
+      description: Lookup Incident reference
+    - order: 2
+      id: store_incident_details_in_insight
+      action_type: Update Insight
+      name: Store Incident details in Insight
+      description: Store Incident details in Insight
+    - order: 3
+      id: wait_if_incident_resolved_and_insight_active
+      action_type: Delay Action Execution
+      name: Wait for 5 min if Incident is Resolved and Insight is Active
+      description: Wait for 5 min if Incident is Resolved and Insight is Active
+      config:
+        delay_minutes: 5
+    - order: 4
+      id: reopen_incident_if_insight_active
+      action_type: Update SNC Incident
+      name: Re-open Incident If Insight State is Active
+      description: Re-open Incident If Insight State is Active
+      start_condition:
+        operator: AND
+        conditions:
+          - record: actionsystem
+            field: Last Action Outcome
+            operator: EQUALS
+            value: Delay Completed
+      mapped_fields:
+        - target: State
+          mappings:
+            - type: value
+              value: In Progress
+    - order: 5
+      id: store_incident_details_in_alert
+      action_type: Update Alert
+      name: Store Incident details in Alert
+      description: Store Incident details in Alert
+    - order: 6
+      id: wait_if_incident_resolved_and_alert_active
+      action_type: Delay Action Execution
+      name: Wait for 5 min if Incident is Resolved and Alert is Active
+      description: Wait for 5 min if Incident is Resolved and Alert is Active
+      config:
+        delay_minutes: 5
+    - order: 7
+      id: reopen_incident_if_singleton_alert_active
+      action_type: Update SNC Incident
+      name: Re-open Incident If Singleton Alert State is Active
+      description: Re-open Incident If Singleton Alert State is Active
+    - order: 8
+      id: store_incident_details_in_additional_alerts
+      action_type: Update Alert
+      name: Store Incident details in additional Alerts
+      description: Store Incident details in additional Alerts
+      use_additional_records: true
 """
 
 

@@ -12,6 +12,7 @@ dependencies = [
 
 [project.scripts]
 ai-workflow = "ai_workflow.main:main"
+ai-workflow-ui = "ai_workflow.ui.streamlit_app:main"
 
 [build-system]
 requires = ["setuptools>=69"]

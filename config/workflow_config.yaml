@@ -11,6 +11,24 @@ execution:
   mode: mock
   require_approval: false
 
+action_fields:
+  source: static
+  # To use real platform fields later:
+  # source: file
+  # paths:
+  #   - /Users/mayank.sultania/Documents/Company/Projects/Dexda-EventsProcessor/global_fields.json
+  extra_fields: []
+  wildcard_prefixes: []
+
+action_service:
+  submit_mode: disabled
+  # To enable real submit later:
+  # submit_mode: http
+  # base_url: http://action:8447
+  # submit_endpoint: /action/group
+  # auth_token_env_var: ACTION_SERVICE_TOKEN
+  timeout_seconds: 10
+
 tools:
   enabled:
     - event_tool
