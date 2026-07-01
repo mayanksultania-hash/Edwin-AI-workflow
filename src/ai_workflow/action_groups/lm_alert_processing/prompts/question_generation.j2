@@ -1,0 +1,72 @@
+LM Alert Processing question generation task.
+
+Read this base Action Group YAML and ask the few questions needed to customize it for a customer.
+
+Base YAML:
+```yaml
+{{ base_yaml }}
+```
+
+Reusable Action ID schemas:
+Use these schemas to ask about fields that can actually be customized later.
+{{ action_schema_context }}
+
+Workflow step groups:
+Each group below lists up to two suggested questions with exact keys. Use those keys and topics.
+{{ step_group_context }}
+
+Rules:
+- Ask at most 2 questions per step group. Use the exact key shown for each question.
+- You may skip a suggested question when the base YAML already matches a typical default and the customer is unlikely to change it.
+- Ask 6 to 12 questions total when most groups need customization; fewer is fine when defaults are enough.
+- Keep each question short and easy to read. You may lightly reword the question text, but keep the key unchanged.
+- Focus on customer-specific choices the user can answer in plain English.
+- Ask only about settings that can later be changed via:
+  - delay durations
+  - ServiceNow mapped fields (caller_id, resolved_by, assignment_group, and similar)
+  - step start conditions (severity, workflow state, auto-close rules)
+  - removing optional steps (scheduled downtime, AI summarise, 24-hour auto-close)
+  - group name or description
+- Do not ask about action IDs, schema versions, step order, or internal field paths.
+- Do not copy values from the base YAML into example_answer.
+- example_answer is a placeholder hint only, not the real answer.
+- example_answer must be one short line (under 15 words when possible).
+- example_answer must be simple, generic, and crisp. Do not list many fields or long sentences.
+
+Example output (follow this style):
+{
+  "questions": [
+    {
+      "key": "alert_intake_path__sdt_handling",
+      "question": "Should scheduled downtime (SDT) steps be kept or removed?",
+      "example_answer": "e.g. remove SDT handling"
+    },
+    {
+      "key": "alert_existing_incident_path__update_mappings",
+      "question": "What resolved_by and assignment_group should alert incident updates use?",
+      "example_answer": "e.g. Edwin Integration, Network Operations"
+    },
+    {
+      "key": "insight_sync_path__ai_summarise",
+      "question": "Should AI insight summarisation steps be kept or removed?",
+      "example_answer": "e.g. remove AI summarise"
+    },
+    {
+      "key": "insight_incident_creation_path__create_conditions",
+      "question": "When should a new ServiceNow incident be created for an insight?",
+      "example_answer": "e.g. severity 4+ when incident-active"
+    },
+    {
+      "key": "correlation_and_alert_incident_path__correlation_delay",
+      "question": "What correlation delay should be used before creating an alert incident?",
+      "example_answer": "e.g. 15 minutes"
+    },
+    {
+      "key": "auto_close_and_cleanup_path__auto_close_rules",
+      "question": "When should alerts be auto-closed?",
+      "example_answer": "e.g. low severity after 1 hour"
+    }
+  ]
+}
+
+Return JSON only with the same shape as the example.

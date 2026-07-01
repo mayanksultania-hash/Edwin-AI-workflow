@@ -1,0 +1,2086 @@
+action_group:
+  schemaType: "action_group"
+  schemaVersion: "20161209.01"
+  actionGroupId: "1524b557-04e2-11ec-ad8c-0dc5c8845aca"
+  name: "LM Alert Processing v2.0 w/AI (Phase 1)"
+  description: "Default action group to process events into de-duplicated alerts"
+  inputType: "events"
+  actions:
+    - _id: "9cf4adb7-5689-486e-786a-0326055b5cfa"
+      name: "Create a new alert if there is no existing open alert to update"
+      description: "Create a new alert if there is no existing open alert to update"
+      schemaType: null
+      schemaVersion: null
+      actionSpecificationId: "f9d471e1-e453-4b25-adee-3ace0939cd31"
+      preconditionV2:
+        schemaName: "filterCondition"
+        schemaVersion: 4
+        expression:
+          AND:
+            - NOT_EQUALS:
+                - field: "events.cf.eventSeverity"
+                  type: "integer"
+                - "0"
+      actionConfig:
+        - name: "stateField"
+          type: "string"
+          value: "alertDetails.workflowState"
+          title: null
+          description: null
+          fieldType: "field"
+          validRecordTypes: null
+          mandatory: false
+      mappings:
+        alertDetails.alertState:
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - GREATER_THAN:
+                      - field: "events.cf.eventSeverity"
+                        type: "integer"
+                      - 0
+            mappedValue: "active"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "events.cf.eventSeverity"
+                        type: "integer"
+                      - "0"
+            mappedValue: "cleared"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+      stopIf: []
+      useAdditionalRecords: null
+    - _id: "93d998c8-3ac3-45c8-eb7f-386fd7b1a64e"
+      name: "Wait for SDT to end whilst continuing to deduplicate further events"
+      description: ""
+      schemaType: null
+      schemaVersion: null
+      actionSpecificationId: "f4d22915-b34f-4686-bce8-c942ced397a4"
+      preconditionV2:
+        schemaName: "filterCondition"
+        schemaVersion: 4
+        expression:
+          AND:
+            - EQUALS:
+                - field: "actionsystem.action.lastOutcome"
+                  type: "string"
+                - "Alert created"
+            - EQUALS:
+                - field: "alerts.alertDetails.workflowState"
+                  type: "string"
+                - "sdt"
+      actionConfig: []
+      mappings: null
+      stopIf: []
+      useAdditionalRecords: null
+    - _id: "7e97cb1e-9a21-e139-3691-467da422f4fb"
+      name: "Flip to new after SDT ends if alert has not been cleared"
+      description: ""
+      schemaType: null
+      schemaVersion: null
+      actionSpecificationId: "a19a3f7d-4f5f-43aa-ab2e-e32d713ad598"
+      preconditionV2:
+        schemaName: "filterCondition"
+        schemaVersion: 4
+        expression:
+          AND:
+            - EQUALS:
+                - field: "alerts.alertDetails.workflowState"
+                  type: "string"
+                - "sdt"
+            - EQUALS:
+                - field: "actionsystem.action.lastOutcome"
+                  type: "string"
+                - "SDT Completed"
+      actionConfig: []
+      mappings:
+        alertDetails.workflowState:
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - NOT_EQUALS:
+                      - field: "alerts.alertDetails.currentSeverity"
+                        type: "integer"
+                      - "0"
+            mappedValue: "new"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "alerts.alertDetails.currentSeverity"
+                        type: "integer"
+                      - "0"
+            mappedValue: "closed"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+      stopIf: []
+      useAdditionalRecords: null
+    - _id: "f909b1e0-2b7e-86b2-4c5a-00b1b199e5b7"
+      name: "Update an existing open alert"
+      description: "Update an existing open alert"
+      schemaType: null
+      schemaVersion: null
+      actionSpecificationId: "a19a3f7d-4f5f-43aa-ab2e-e32d713ad598"
+      preconditionV2:
+        schemaName: "filterCondition"
+        schemaVersion: 4
+        expression:
+          AND:
+            - EQUALS:
+                - field: "actionsystem.action.lastOutcome"
+                  type: "string"
+                - "Action Skipped"
+            - NOT_EQUALS:
+                - field: "alerts.alertDetails.workflowState"
+                  type: "string"
+                - "closed"
+      actionConfig:
+        - name: "additionalInsights"
+          type: "boolean"
+          value: true
+          title: null
+          description: null
+          fieldType: "boolean"
+          validRecordTypes: null
+          mandatory: false
+        - name: "strictOrder"
+          type: "boolean"
+          value: false
+          title: null
+          description: null
+          fieldType: "boolean"
+          validRecordTypes: null
+          mandatory: false
+      mappings:
+        alertDetails.alertState:
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - GREATER_THAN:
+                      - field: "events.cf.eventSeverity"
+                        type: "integer"
+                      - 0
+            mappedValue: "active"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - NOT_EQUALS:
+                      - field: "events.cf.eventSource"
+                        type: "string"
+                      - "LogicMonitor"
+                  - EQUALS:
+                      - field: "events.cf.eventSeverity"
+                        type: "integer"
+                      - "0"
+            mappedValue: "cleared"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "events.cf.eventSource"
+                        type: "string"
+                      - "LogicMonitor"
+                  - EQUALS:
+                      - field: "events.cf.eventSeverity"
+                        type: "integer"
+                      - "0"
+                  - CONTAINS:
+                      - field: "events.cf.eventDetails"
+                        type: "string"
+                      -
+                        - "severity: 2"
+                        - "severity: 3"
+                        - "severity: 4"
+                  - OR:
+                      - AND:
+                          - CONTAINS:
+                              - field: "alerts.cf.eventDetails"
+                                type: "string"
+                              -
+                                - "severity: 2"
+                          - CONTAINS:
+                              - field: "events.cf.eventDetails"
+                                type: "string"
+                              -
+                                - "severity: 2"
+                      - AND:
+                          - CONTAINS:
+                              - field: "alerts.cf.eventDetails"
+                                type: "string"
+                              -
+                                - "severity: 3"
+                          - CONTAINS:
+                              - field: "events.cf.eventDetails"
+                                type: "string"
+                              -
+                                - "severity: 3"
+                      - AND:
+                          - CONTAINS:
+                              - field: "alerts.cf.eventDetails"
+                                type: "string"
+                              -
+                                - "severity: 4"
+                          - CONTAINS:
+                              - field: "events.cf.eventDetails"
+                                type: "string"
+                              -
+                                - "severity: 4"
+            mappedValue: "cleared"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "events.cf.eventSource"
+                        type: "string"
+                      - "LogicMonitor"
+                  - EQUALS:
+                      - field: "events.cf.eventSeverity"
+                        type: "integer"
+                      - "0"
+                  - NOT_CONTAINS:
+                      - field: "events.cf.eventDetails"
+                        type: "string"
+                      -
+                        - "severity: 2"
+                        - "severity: 3"
+                        - "severity: 4"
+            mappedValue: "cleared"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+        alertDetails.currentSeverity:
+          - type: "variable"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - GREATER_THAN:
+                      - field: "events.cf.eventSeverity"
+                        type: "integer"
+                      - 0
+            mappedValue: null
+            mappedVariable: "events.cf.eventSeverity"
+            mappedVariables: null
+            format: null
+          - type: "variable"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - NOT_EQUALS:
+                      - field: "events.cf.eventSource"
+                        type: "string"
+                      - "LogicMonitor"
+                  - EQUALS:
+                      - field: "events.cf.eventSeverity"
+                        type: "integer"
+                      - "0"
+            mappedValue: null
+            mappedVariable: "events.cf.eventSeverity"
+            mappedVariables: null
+            format: null
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "events.cf.eventSource"
+                        type: "string"
+                      - "LogicMonitor"
+                  - EQUALS:
+                      - field: "events.cf.eventSeverity"
+                        type: "integer"
+                      - "0"
+                  - CONTAINS:
+                      - field: "events.cf.eventDetails"
+                        type: "string"
+                      -
+                        - "severity: 2"
+                        - "severity: 3"
+                        - "severity: 4"
+                  - OR:
+                      - AND:
+                          - CONTAINS:
+                              - field: "alerts.cf.eventDetails"
+                                type: "string"
+                              -
+                                - "severity: 2"
+                          - CONTAINS:
+                              - field: "events.cf.eventDetails"
+                                type: "string"
+                              -
+                                - "severity: 2"
+                      - AND:
+                          - CONTAINS:
+                              - field: "alerts.cf.eventDetails"
+                                type: "string"
+                              -
+                                - "severity: 3"
+                          - CONTAINS:
+                              - field: "events.cf.eventDetails"
+                                type: "string"
+                              -
+                                - "severity: 3"
+                      - AND:
+                          - CONTAINS:
+                              - field: "alerts.cf.eventDetails"
+                                type: "string"
+                              -
+                                - "severity: 4"
+                          - CONTAINS:
+                              - field: "events.cf.eventDetails"
+                                type: "string"
+                              -
+                                - "severity: 4"
+            mappedValue: "0"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+          - type: "variable"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "events.cf.eventSource"
+                        type: "string"
+                      - "LogicMonitor"
+                  - EQUALS:
+                      - field: "events.cf.eventSeverity"
+                        type: "integer"
+                      - "0"
+                  - CONTAINS:
+                      - field: "events.cf.eventDetails"
+                        type: "string"
+                      -
+                        - "severity: 2"
+                        - "severity: 3"
+                        - "severity: 4"
+                  - OR:
+                      - AND:
+                          - CONTAINS:
+                              - field: "alerts.cf.eventDetails"
+                                type: "string"
+                              -
+                                - "severity: 2"
+                          - NOT_CONTAINS:
+                              - field: "events.cf.eventDetails"
+                                type: "string"
+                              -
+                                - "severity: 2"
+                      - AND:
+                          - CONTAINS:
+                              - field: "alerts.cf.eventDetails"
+                                type: "string"
+                              -
+                                - "severity: 3"
+                          - NOT_CONTAINS:
+                              - field: "events.cf.eventDetails"
+                                type: "string"
+                              -
+                                - "severity: 3"
+                      - AND:
+                          - CONTAINS:
+                              - field: "alerts.cf.eventDetails"
+                                type: "string"
+                              -
+                                - "severity: 4"
+                          - NOT_CONTAINS:
+                              - field: "events.cf.eventDetails"
+                                type: "string"
+                              -
+                                - "severity: 4"
+            mappedValue: null
+            mappedVariable: "alerts.alertDetails.currentSeverity"
+            mappedVariables: null
+            format: null
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "events.cf.eventSource"
+                        type: "string"
+                      - "LogicMonitor"
+                  - EQUALS:
+                      - field: "events.cf.eventSeverity"
+                        type: "integer"
+                      - "0"
+                  - NOT_CONTAINS:
+                      - field: "events.cf.eventDetails"
+                        type: "string"
+                      -
+                        - "severity: 2"
+                        - "severity: 3"
+                        - "severity: 4"
+            mappedValue: "0"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+        cf.eventDetails:
+          - type: "variable"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - GREATER_THAN:
+                      - field: "events.cf.eventSeverity"
+                        type: "integer"
+                      - 0
+            mappedValue: null
+            mappedVariable: "events.cf.eventDetails"
+            mappedVariables: null
+            format: null
+      stopIf: []
+      useAdditionalRecords: null
+    - _id: "31ddd54d-beda-67ca-514e-146accea3733"
+      name: "Update Singleton Alert Escalation on State Change"
+      description: "Update Singleton Alert Escalation on State Change"
+      schemaType: null
+      schemaVersion: null
+      actionSpecificationId: "a19a3f7d-4f5f-43aa-ab2e-e32d713ad598"
+      preconditionV2:
+        schemaName: "filterCondition"
+        schemaVersion: 4
+        expression:
+          AND:
+            - EQUALS:
+                - field: "actionsystem.action.lastOutcome"
+                  type: "string"
+                - "Alert updated"
+            - OR:
+                - AND:
+                    - EQUALS:
+                        - field: "alerts.alertDetails.workflowState"
+                          type: "string"
+                        - "incident-active"
+                    - EQUALS:
+                        - field: "alerts.alertDetails.alertState"
+                          type: "string"
+                        - "cleared"
+                - AND:
+                    - EQUALS:
+                        - field: "alerts.alertDetails.workflowState"
+                          type: "string"
+                        - "incident-resolved"
+                    - EQUALS:
+                        - field: "alerts.alertDetails.alertState"
+                          type: "string"
+                        - "active"
+      actionConfig: []
+      mappings:
+        alertDetails.workflowState:
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "alerts.alertDetails.workflowState"
+                        type: "string"
+                      - "incident-resolved"
+                  - EQUALS:
+                      - field: "alerts.alertDetails.alertState"
+                        type: "string"
+                      - "active"
+            mappedValue: "incident-active"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "alerts.alertDetails.workflowState"
+                        type: "string"
+                      - "incident-active"
+                  - EQUALS:
+                      - field: "alerts.alertDetails.alertState"
+                        type: "string"
+                      - "cleared"
+            mappedValue: "incident-resolved"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+      stopIf: []
+      useAdditionalRecords: null
+    - _id: "c2ac8dd4-46ee-de04-d039-b533b19c7a9d"
+      name: "Find a LM-DX reference for this alert"
+      description: "Find any ServiceNow LM-DX reference for this Updated Alert"
+      schemaType: null
+      schemaVersion: null
+      actionSpecificationId: "de83acd5-e921-479b-8aea-faad74ae113a"
+      preconditionV2:
+        schemaName: "filterCondition"
+        schemaVersion: 4
+        expression:
+          AND:
+            - EQUALS:
+                - field: "actionsystem.action.lastOutcome"
+                  type: "string"
+                - "Alert updated"
+            - IN:
+                - field: "alerts.alertDetails.workflowState"
+                  type: "string"
+                -
+                  - "incident-active"
+                  - "incident-resolved"
+            - NOT_EQUALS:
+                - field: "alerts.alertDetails.incidentId"
+                  type: "string"
+                - "requesting"
+      actionConfig:
+        - name: "internalRecordType"
+          type: "string"
+          value: "alerts"
+          title: null
+          description: null
+          fieldType: "recordType"
+          validRecordTypes: null
+          mandatory: false
+      mappings: null
+      stopIf: []
+      useAdditionalRecords: null
+    - _id: "8468038a-7ac7-a223-e68e-c5f6b3e33cfc"
+      name: "Update ServiceNow Incident linked to this alert"
+      description: "Update any existing Incident for which we found a row key"
+      schemaType: null
+      schemaVersion: null
+      actionSpecificationId: "759cf7ca-9558-4811-983b-e470698fbe9c"
+      preconditionV2:
+        schemaName: "filterCondition"
+        schemaVersion: 4
+        expression:
+          AND:
+            - EQUALS:
+                - field: "actionsystem.action.lastOutcome"
+                  type: "string"
+                - "Rowkey found"
+      actionConfig: []
+      mappings:
+        close_code:
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "alerts.alertDetails.workflowState"
+                        type: "string"
+                      - "incident-resolved"
+            mappedValue: "Closed/Resolved by Caller"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+        close_notes:
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "alerts.alertDetails.workflowState"
+                        type: "string"
+                      - "incident-resolved"
+            mappedValue: "This incident was resolved because a linked monitoring alert or insight has now cleared."
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+        resolved_by:
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "alerts.alertDetails.workflowState"
+                        type: "string"
+                      - "incident-resolved"
+            mappedValue: "Edwin Integration"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+        short_description:
+          - type: "multi_variable"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "alerts.alertDetails.workflowState"
+                        type: "string"
+                      - "incident-active"
+            mappedValue: null
+            mappedVariable: null
+            mappedVariables:
+              - "alerts.cf.eventCI"
+              - "alerts.meta.eventCount"
+              - "alerts.cf.eventName"
+            format: "CI:%1$s; De-duplicated %2$d Events; %3$s"
+          - type: "multi_variable"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "alerts.alertDetails.workflowState"
+                        type: "string"
+                      - "incident-resolved"
+            mappedValue: null
+            mappedVariable: null
+            mappedVariables:
+              - "alerts.cf.eventCI"
+              - "alerts.meta.eventCount"
+              - "alerts.cf.eventName"
+            format: "***CLEARED***-CI:%1$s; De-duplicated %2$d Events; %3$s"
+        state:
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "alerts.alertDetails.workflowState"
+                        type: "string"
+                      - "incident-resolved"
+            mappedValue: "Resolved"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "alerts.alertDetails.workflowState"
+                        type: "string"
+                      - "incident-active"
+            mappedValue: "In Progress"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+        work_notes:
+          - type: "multi_variable"
+            conditionV2: null
+            mappedValue: null
+            mappedVariable: null
+            mappedVariables:
+              - "alerts.meta.link"
+              - "alerts.alertDetails.alertState"
+              - "alerts.meta.eventCount"
+              - "alerts.meta.lastEventTimestamp"
+            format: "Alert updated by Edwin [code]<a href=\"%1$s\" target=\"_blank\"> Alert </a>[/code].\nThe alert state is %2$s.\nThe number of de-duplicated events is %3$d.\nThe last event timestamp is %4$tF %4$tT."
+      stopIf: []
+      useAdditionalRecords: null
+    - _id: "18bda3b1-7f2f-09ac-1655-cb091e441960"
+      name: "Update associated Insight linked to this alert record (if any returned)"
+      description: "Maintain the severities, last event timestamp, and state of any associated Insight"
+      schemaType: null
+      schemaVersion: null
+      actionSpecificationId: "a905a127-65ff-4d5e-9169-d4725f1adcc3"
+      preconditionV2:
+        schemaName: "filterCondition"
+        schemaVersion: 4
+        expression:
+          AND:
+            - NOT_EQUALS:
+                - field: "insights.insightDetails.workflowState"
+                  type: "string"
+                - "closed"
+            - EQUALS:
+                - field: "alerts.alertDetails.workflowState"
+                  type: "string"
+                - "correlated"
+            - NOT_EQUALS:
+                - field: "insights.meta.state"
+                  type: "string"
+                - "merged"
+      actionConfig:
+        - name: "alertClosedState"
+          type: "string"
+          value: "cleared"
+          title: null
+          description: null
+          fieldType: "string"
+          validRecordTypes: null
+          mandatory: false
+      mappings: {}
+      stopIf: []
+      useAdditionalRecords: null
+    - _id: "c9b2c7a1-6746-b207-f149-0d93196f0412"
+      name: "Update Insight Escalation on State Change"
+      description: "Update Insight Escalation on State Change"
+      schemaType: null
+      schemaVersion: null
+      actionSpecificationId: "a905a127-65ff-4d5e-9169-d4725f1adcc3"
+      preconditionV2:
+        schemaName: "filterCondition"
+        schemaVersion: 4
+        expression:
+          AND:
+            - EQUALS:
+                - field: "actionsystem.action.lastOutcome"
+                  type: "string"
+                - "Insight updated"
+            - OR:
+                - AND:
+                    - EQUALS:
+                        - field: "insights.insightDetails.workflowState"
+                          type: "string"
+                        - "incident-active"
+                    - EQUALS:
+                        - field: "insights.meta.state"
+                          type: "string"
+                        - "cleared"
+                - AND:
+                    - EQUALS:
+                        - field: "insights.insightDetails.workflowState"
+                          type: "string"
+                        - "incident-resolved"
+                    - EQUALS:
+                        - field: "insights.meta.state"
+                          type: "string"
+                        - "active"
+      actionConfig: []
+      mappings:
+        insightDetails.workflowState:
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "insights.insightDetails.workflowState"
+                        type: "string"
+                      - "incident-resolved"
+                  - EQUALS:
+                      - field: "insights.meta.state"
+                        type: "string"
+                      - "active"
+            mappedValue: "incident-active"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "insights.insightDetails.workflowState"
+                        type: "string"
+                      - "incident-active"
+                  - EQUALS:
+                      - field: "insights.meta.state"
+                        type: "string"
+                      - "cleared"
+            mappedValue: "incident-resolved"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+      stopIf: []
+      useAdditionalRecords: null
+    - _id: "9c255390-4d7f-bc28-1110-4025e9373a7f"
+      name: "Summarise insights with AI"
+      description: ""
+      schemaType: null
+      schemaVersion: null
+      actionSpecificationId: "a445c17c-4c87-4289-9dd9-eb8cb40315cf"
+      preconditionV2:
+        schemaName: "filterCondition"
+        schemaVersion: 4
+        expression:
+          AND:
+            - EQUALS:
+                - field: "actionsystem.action.lastOutcome"
+                  type: "string"
+                - "Insight updated"
+      actionConfig: []
+      mappings: null
+      stopIf: []
+      useAdditionalRecords: null
+    - _id: "722309b1-1388-844a-07b6-42200a72c5fa"
+      name: "Update Insight with AI Title, Summary and RCA"
+      description: ""
+      schemaType: null
+      schemaVersion: null
+      actionSpecificationId: "a905a127-65ff-4d5e-9169-d4725f1adcc3"
+      preconditionV2:
+        schemaName: "filterCondition"
+        schemaVersion: 4
+        expression:
+          AND:
+            - EQUALS:
+                - field: "actionsystem.action.lastOutcome"
+                  type: "string"
+                - "Summary created"
+      actionConfig: []
+      mappings:
+        ml.genAiRootCause:
+          - type: "variable"
+            conditionV2: null
+            mappedValue: null
+            mappedVariable: "genAiSummary.rootCause"
+            mappedVariables: null
+            format: null
+        ml.genAiSummary:
+          - type: "variable"
+            conditionV2: null
+            mappedValue: null
+            mappedVariable: "genAiSummary.summary"
+            mappedVariables: null
+            format: null
+        ml.genAiTitle:
+          - type: "variable"
+            conditionV2: null
+            mappedValue: null
+            mappedVariable: "genAiSummary.title"
+            mappedVariables: null
+            format: null
+      stopIf: []
+      useAdditionalRecords: null
+    - _id: "2de93b61-8338-c89a-deb4-ce6454444db4"
+      name: "Find a LM-DX reference for this insight"
+      description: "Find any ServiceNow LM-DX reference for this Insight"
+      schemaType: null
+      schemaVersion: null
+      actionSpecificationId: "de83acd5-e921-479b-8aea-faad74ae113a"
+      preconditionV2:
+        schemaName: "filterCondition"
+        schemaVersion: 4
+        expression:
+          AND:
+            - EQUALS:
+                - field: "actionsystem.action.lastOutcome"
+                  type: "string"
+                - "Insight updated"
+            - IN:
+                - field: "insights.insightDetails.workflowState"
+                  type: "string"
+                -
+                  - "incident-active"
+                  - "incident-resolved"
+            - NOT_EQUALS:
+                - field: "alerts.alertDetails.incidentId"
+                  type: "string"
+                - "requesting"
+      actionConfig:
+        - name: "internalRecordType"
+          type: "string"
+          value: "insights"
+          title: null
+          description: null
+          fieldType: "recordType"
+          validRecordTypes: null
+          mandatory: false
+      mappings: null
+      stopIf: []
+      useAdditionalRecords: null
+    - _id: "3b921c5b-f462-b51e-e82f-ec580d1799c0"
+      name: "Update ServiceNow Incident linked to this insight"
+      description: "Update any existing Incident for which we found a row key"
+      schemaType: null
+      schemaVersion: null
+      actionSpecificationId: "759cf7ca-9558-4811-983b-e470698fbe9c"
+      preconditionV2:
+        schemaName: "filterCondition"
+        schemaVersion: 4
+        expression:
+          AND:
+            - EQUALS:
+                - field: "actionsystem.action.lastOutcome"
+                  type: "string"
+                - "Rowkey found"
+      actionConfig: []
+      mappings:
+        close_code:
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "insights.insightDetails.workflowState"
+                        type: "string"
+                      - "incident-resolved"
+            mappedValue: "Closed/Resolved by Caller"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+        close_notes:
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "insights.insightDetails.workflowState"
+                        type: "string"
+                      - "incident-resolved"
+            mappedValue: "Insight resolved by a monitoring alert"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+        description:
+          - type: "variable"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EMPTY:
+                      - field: "insights.ml.genAiTitle"
+                        type: "string"
+            mappedValue: null
+            mappedVariable: "insights.ml.description"
+            mappedVariables: null
+            format: null
+          - type: "multi_variable"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - NOT_EMPTY:
+                      - field: "insights.ml.genAiTitle"
+                        type: "string"
+            mappedValue: null
+            mappedVariable: null
+            mappedVariables:
+              - "insights.ml.genAiTitle"
+              - "insights.ml.genAiSummary"
+              - "insights.ml.genAiRootCause"
+              - "insights.ml.description"
+            format: "Title - %s\nSummary - %s\nRoot Cause - %s\nDetails - %s"
+        resolved_by:
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "insights.insightDetails.workflowState"
+                        type: "string"
+                      - "incident-resolved"
+            mappedValue: "Edwin Integration"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+        short_description:
+          - type: "multi_variable"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "insights.insightDetails.workflowState"
+                        type: "string"
+                      - "incident-active"
+            mappedValue: null
+            mappedVariable: null
+            mappedVariables:
+              - "insights.meta.totalAlerts"
+              - "insights.ml.causalCI"
+            format: "Insight Correlated %1$d Alerts; Causal CI: %2$s."
+          - type: "multi_variable"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "insights.insightDetails.workflowState"
+                        type: "string"
+                      - "incident-resolved"
+            mappedValue: null
+            mappedVariable: null
+            mappedVariables:
+              - "insights.meta.totalAlerts"
+              - "insights.ml.causalCI"
+            format: "***CLEARED***-Insight Correlated %1$d Alerts; Causal CI: %2$s."
+        state:
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "insights.insightDetails.workflowState"
+                        type: "string"
+                      - "incident-resolved"
+            mappedValue: "Resolved"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "insights.insightDetails.workflowState"
+                        type: "string"
+                      - "incident-active"
+            mappedValue: "In Progress"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+        work_notes:
+          - type: "multi_variable"
+            conditionV2: null
+            mappedValue: null
+            mappedVariable: null
+            mappedVariables:
+              - "insights.meta.link"
+              - "insights.meta.state"
+              - "insights.meta.totalAlerts"
+              - "insights.meta.lastEventTimestamp"
+            format: "Incident updated by Edwin [code]<a href=\"%1$s\" target=\"_blank\"> ML-Insight </a>[/code].\nThe insight state is %2$s.\nThe number of correlated alerts is %3$d.\nThe last event timestamp is %4$tF %4$tT."
+      stopIf: []
+      useAdditionalRecords: null
+    - _id: "83c78078-54d1-98b4-5fcf-c41c80bdcc34"
+      name: "Update insight Escalation for insights that have no related incident"
+      description: ""
+      schemaType: null
+      schemaVersion: null
+      actionSpecificationId: "a905a127-65ff-4d5e-9169-d4725f1adcc3"
+      preconditionV2:
+        schemaName: "filterCondition"
+        schemaVersion: 4
+        expression:
+          AND:
+            - EQUALS:
+                - field: "insights.insightDetails.workflowState"
+                  type: "string"
+                - "new"
+            - NOT_EQUALS:
+                - field: "insights.meta.state"
+                  type: "string"
+                - "merged"
+            - GREATER_THAN:
+                - field: "insights.ml.highestSeverity"
+                  type: "integer"
+                - 2
+      actionConfig: []
+      mappings:
+        insightDetails.incidentId:
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EMPTY:
+                      - field: "insights.insightDetails.incidentId"
+                        type: "string"
+            mappedValue: "requesting"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+        insightDetails.workflowState:
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "insights.meta.state"
+                        type: "string"
+                      - "active"
+                  - EQUALS:
+                      - field: "insights.insightDetails.workflowState"
+                        type: "string"
+                      - "new"
+            mappedValue: "incident-active"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "insights.meta.state"
+                        type: "string"
+                      - "cleared"
+                  - EQUALS:
+                      - field: "insights.insightDetails.workflowState"
+                        type: "string"
+                      - "new"
+            mappedValue: "incident-resolved"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+      stopIf: []
+      useAdditionalRecords: null
+    - _id: "9d98197e-7920-303e-c626-bc70ff5bbee7"
+      name: "Create ServiceNow Incident for this insight"
+      description: ""
+      schemaType: null
+      schemaVersion: null
+      actionSpecificationId: "a088ee7d-22cd-4cd2-bc9d-2a9d147a7552"
+      preconditionV2:
+        schemaName: "filterCondition"
+        schemaVersion: 4
+        expression:
+          AND:
+            - EQUALS:
+                - field: "actionsystem.action.lastOutcome"
+                  type: "string"
+                - "Insight updated"
+      actionConfig: []
+      mappings:
+        caller_id:
+          - type: "value"
+            conditionV2: null
+            mappedValue: "Edwin Integration"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+        close_code:
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "insights.insightDetails.workflowState"
+                        type: "string"
+                      - "incident-resolved"
+            mappedValue: "Closed/Resolved by Caller"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+        close_notes:
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "insights.insightDetails.workflowState"
+                        type: "string"
+                      - "incident-resolved"
+            mappedValue: "This incident was resolved because a linked monitoring alert or insight has now cleared."
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+        cmdb_ci:
+          - type: "variable"
+            conditionV2: null
+            mappedValue: null
+            mappedVariable: "alerts.cf.eventCI"
+            mappedVariables: null
+            format: null
+        contact_type:
+          - type: "value"
+            conditionV2: null
+            mappedValue: "Edwin Integration"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+        description:
+          - type: "variable"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EMPTY:
+                      - field: "insights.ml.genAiTitle"
+                        type: "string"
+            mappedValue: null
+            mappedVariable: "insights.ml.description"
+            mappedVariables: null
+            format: null
+          - type: "multi_variable"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - NOT_EMPTY:
+                      - field: "insights.ml.genAiTitle"
+                        type: "string"
+            mappedValue: null
+            mappedVariable: null
+            mappedVariables:
+              - "insights.ml.genAiTitle"
+              - "insights.ml.genAiSummary"
+              - "insights.ml.genAiRootCause"
+              - "insights.ml.description"
+            format: "Title - %s\nSummary - %s\nRoot Cause - %s\nDetails - %s"
+        impact:
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "insights.ml.highestSeverity"
+                        type: "integer"
+                      - "5"
+            mappedValue: "1"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "insights.ml.highestSeverity"
+                        type: "integer"
+                      - "4"
+            mappedValue: "2"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                OR:
+                  - LESS_THAN_EQUAL:
+                      - field: "insights.ml.highestSeverity"
+                        type: "integer"
+                      - 3
+            mappedValue: "2"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+        resolved_by:
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "insights.insightDetails.workflowState"
+                        type: "string"
+                      - "incident-resolved"
+            mappedValue: "Edwin Integration"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+        short_description:
+          - type: "multi_variable"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "insights.insightDetails.workflowState"
+                        type: "string"
+                      - "incident-active"
+            mappedValue: null
+            mappedVariable: null
+            mappedVariables:
+              - "insights.meta.totalAlerts"
+              - "insights.ml.causalCI"
+            format: "Insight Correlated %1$d Alerts; Causal CI: %2$s."
+          - type: "multi_variable"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "insights.insightDetails.workflowState"
+                        type: "string"
+                      - "incident-resolved"
+            mappedValue: null
+            mappedVariable: null
+            mappedVariables:
+              - "insights.meta.totalAlerts"
+              - "insights.ml.causalCI"
+            format: "***CLEARED***-Insight Correlated %1$d Alerts; Causal CI: %2$s."
+        state:
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "insights.insightDetails.workflowState"
+                        type: "string"
+                      - "incident-resolved"
+            mappedValue: "Resolved"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+        urgency:
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "insights.ml.highestSeverity"
+                        type: "integer"
+                      - "5"
+            mappedValue: "2"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "insights.ml.highestSeverity"
+                        type: "integer"
+                      - "4"
+            mappedValue: "2"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                OR:
+                  - LESS_THAN_EQUAL:
+                      - field: "insights.ml.highestSeverity"
+                        type: "integer"
+                      - 3
+            mappedValue: "3"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+        work_notes:
+          - type: "multi_variable"
+            conditionV2: null
+            mappedValue: null
+            mappedVariable: null
+            mappedVariables:
+              - "insights.meta.link"
+              - "insights.meta.state"
+              - "insights.meta.totalAlerts"
+              - "insights.meta.lastEventTimestamp"
+            format: "Incident created by Edwin [code]<a href=\"%1$s\" target=\"_blank\"> ML-Insight </a>[/code].\nThe insight state is %2$s.\nThe number of correlated alerts is %3$d.\nThe last event timestamp is %4$tF %4$tT."
+      stopIf: []
+      useAdditionalRecords: null
+    - _id: "82820d95-af05-c13e-bf9c-02a9e4d23b7a"
+      name: "Store a reference to the SNC incident request"
+      description: ""
+      schemaType: null
+      schemaVersion: null
+      actionSpecificationId: "b2b67ee0-2476-48b7-b9ed-6cd01343aba7"
+      preconditionV2:
+        schemaName: "filterCondition"
+        schemaVersion: 4
+        expression:
+          AND:
+            - EQUALS:
+                - field: "actionsystem.action.lastOutcome"
+                  type: "string"
+                - "SNC Incident created"
+      actionConfig:
+        - name: "externalRecordType"
+          type: "string"
+          value: "sncIncident"
+          title: null
+          description: null
+          fieldType: "recordTypeExternal"
+          validRecordTypes: null
+          mandatory: true
+        - name: "internalRecordType"
+          type: "string"
+          value: "insights"
+          title: null
+          description: null
+          fieldType: "recordType"
+          validRecordTypes: null
+          mandatory: true
+      mappings: null
+      stopIf: []
+      useAdditionalRecords: null
+    - _id: "82d5dd1c-fb02-88f1-4b7f-267b36279352"
+      name: "Update Incident ID to pending"
+      description: "Following a successful call to LMDX update the Incident ID to pending"
+      schemaType: null
+      schemaVersion: null
+      actionSpecificationId: "a905a127-65ff-4d5e-9169-d4725f1adcc3"
+      preconditionV2:
+        schemaName: "filterCondition"
+        schemaVersion: 4
+        expression:
+          AND:
+            - EQUALS:
+                - field: "actionsystem.action.lastOutcome"
+                  type: "string"
+                - "Rowkey stored"
+      actionConfig: []
+      mappings:
+        insightDetails.incidentId:
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "insights.insightDetails.incidentId"
+                        type: "string"
+                      - "requesting"
+            mappedValue: "pending"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+      stopIf: []
+      useAdditionalRecords: null
+    - _id: "43cc116d-8996-a282-b0f1-fe4d20c855aa"
+      name: "Delay for 15 mins to allow new alerts to correlate"
+      description: "Wait at least 15 mins to allow this new alert to correlate"
+      schemaType: null
+      schemaVersion: null
+      actionSpecificationId: "7db24035-1e81-48e8-a41c-80941e0aa733"
+      preconditionV2:
+        schemaName: "filterCondition"
+        schemaVersion: 4
+        expression:
+          AND:
+            - EQUALS:
+                - field: "alerts.alertDetails.workflowState"
+                  type: "string"
+                - "new"
+      actionConfig:
+        - name: "delayTime"
+          type: "number"
+          value: 930
+          title: null
+          description: null
+          fieldType: "number"
+          validRecordTypes: null
+          mandatory: true
+      mappings: null
+      stopIf: []
+      useAdditionalRecords: null
+    - _id: "2fa41f40-70ee-74a4-8cd9-94c288b1899e"
+      name: "Update alert Escalation"
+      description: "Update the alert state to indicate that an Incident has been requested"
+      schemaType: null
+      schemaVersion: null
+      actionSpecificationId: "a19a3f7d-4f5f-43aa-ab2e-e32d713ad598"
+      preconditionV2:
+        schemaName: "filterCondition"
+        schemaVersion: 4
+        expression:
+          AND:
+            - EQUALS:
+                - field: "actionsystem.action.lastOutcome"
+                  type: "string"
+                - "Delay Completed"
+            - EQUALS:
+                - field: "alerts.alertDetails.workflowState"
+                  type: "string"
+                - "new"
+            - GREATER_THAN:
+                - field: "alerts.alertDetails.worstSeverity"
+                  type: "integer"
+                - 2
+      actionConfig: []
+      mappings:
+        alertDetails.incidentId:
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EMPTY:
+                      - field: "alerts.alertDetails.incidentId"
+                        type: "string"
+            mappedValue: "requesting"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+        alertDetails.workflowState:
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "alerts.alertDetails.workflowState"
+                        type: "string"
+                      - "new"
+                  - EQUALS:
+                      - field: "alerts.alertDetails.alertState"
+                        type: "string"
+                      - "active"
+            mappedValue: "incident-active"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "alerts.alertDetails.workflowState"
+                        type: "string"
+                      - "new"
+                  - EQUALS:
+                      - field: "alerts.alertDetails.alertState"
+                        type: "string"
+                      - "cleared"
+            mappedValue: "incident-resolved"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+      stopIf: []
+      useAdditionalRecords: null
+    - _id: "0a573320-99c6-5d29-25ed-f29a7f5e51e2"
+      name: "Create ServiceNow Incident for this alert"
+      description: "If the alert is not yet correlated (Escalation equals correlated), then directly create an incident for this alert. Do not create an incident if the alert has only reached indeterminate (maintenance)."
+      schemaType: null
+      schemaVersion: null
+      actionSpecificationId: "a088ee7d-22cd-4cd2-bc9d-2a9d147a7552"
+      preconditionV2:
+        schemaName: "filterCondition"
+        schemaVersion: 4
+        expression:
+          AND:
+            - EQUALS:
+                - field: "actionsystem.action.lastOutcome"
+                  type: "string"
+                - "Alert updated"
+      actionConfig: []
+      mappings:
+        caller_id:
+          - type: "value"
+            conditionV2: null
+            mappedValue: "Edwin Integration"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+        close_code:
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "alerts.alertDetails.workflowState"
+                        type: "string"
+                      - "incident-resolved"
+            mappedValue: "Closed/Resolved by Caller"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+        close_notes:
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "alerts.alertDetails.workflowState"
+                        type: "string"
+                      - "incident-resolved"
+            mappedValue: "This incident was resolved because a linked monitoring alert or insight has now cleared."
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+        cmdb_ci:
+          - type: "variable"
+            conditionV2: null
+            mappedValue: null
+            mappedVariable: "alerts.cf.eventCI"
+            mappedVariables: null
+            format: null
+        contact_type:
+          - type: "value"
+            conditionV2: null
+            mappedValue: "Edwin Integration"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+        description:
+          - type: "variable"
+            conditionV2: null
+            mappedValue: null
+            mappedVariable: "alerts.cf.eventDescription"
+            mappedVariables: null
+            format: null
+        impact:
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "alerts.alertDetails.worstSeverity"
+                        type: "integer"
+                      - "5"
+            mappedValue: "1"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "alerts.alertDetails.worstSeverity"
+                        type: "integer"
+                      - "4"
+            mappedValue: "2"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                OR:
+                  - LESS_THAN_EQUAL:
+                      - field: "alerts.alertDetails.worstSeverity"
+                        type: "integer"
+                      - 2
+            mappedValue: "2"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+        resolved_by:
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "alerts.alertDetails.workflowState"
+                        type: "string"
+                      - "incident-resolved"
+            mappedValue: "Edwin Integration"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+        short_description:
+          - type: "multi_variable"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "alerts.alertDetails.workflowState"
+                        type: "string"
+                      - "incident-active"
+            mappedValue: null
+            mappedVariable: null
+            mappedVariables:
+              - "alerts.cf.eventCI"
+              - "alerts.meta.eventCount"
+              - "alerts.cf.eventName"
+            format: "CI:%1$s; De-duplicated %2$d Events; %3$s"
+          - type: "multi_variable"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "alerts.alertDetails.workflowState"
+                        type: "string"
+                      - "incident-resolved"
+            mappedValue: null
+            mappedVariable: null
+            mappedVariables:
+              - "alerts.cf.eventCI"
+              - "alerts.meta.eventCount"
+              - "alerts.cf.eventName"
+            format: "***CLEARED***-CI:%1$s; De-duplicated %2$d Events; %3$s"
+        state:
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "alerts.alertDetails.workflowState"
+                        type: "string"
+                      - "incident-resolved"
+                  - EQUALS:
+                      - field: "alerts.alertDetails.alertState"
+                        type: "string"
+                      - "cleared"
+            mappedValue: "Resolved"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+        urgency:
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "alerts.alertDetails.worstSeverity"
+                        type: "integer"
+                      - "5"
+            mappedValue: "2"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "alerts.alertDetails.worstSeverity"
+                        type: "integer"
+                      - "4"
+            mappedValue: "2"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                OR:
+                  - LESS_THAN_EQUAL:
+                      - field: "alerts.alertDetails.worstSeverity"
+                        type: "integer"
+                      - 2
+            mappedValue: "3"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+        work_notes:
+          - type: "multi_variable"
+            conditionV2: null
+            mappedValue: null
+            mappedVariable: null
+            mappedVariables:
+              - "alerts.meta.link"
+              - "alerts.alertDetails.alertState"
+              - "alerts.meta.eventCount"
+              - "alerts.meta.lastEventTimestamp"
+            format: "Incident created by Edwin [code]<a href=\"%1$s\" target=\"_blank\"> alert </a>[/code].\nThe alert state is %2$s.\nThe number of de-duplicated events is %3$d.\nThe last event timestamp is %4$tF %4$tT."
+      stopIf: []
+      useAdditionalRecords: null
+    - _id: "810b393a-5af9-55c4-1dd3-563d3326d7c7"
+      name: "Store a reference to the SNC incident request"
+      description: "Store a mapping between the alert and the ServiceNow LM-DX reference"
+      schemaType: null
+      schemaVersion: null
+      actionSpecificationId: "b2b67ee0-2476-48b7-b9ed-6cd01343aba7"
+      preconditionV2:
+        schemaName: "filterCondition"
+        schemaVersion: 4
+        expression:
+          AND:
+            - EQUALS:
+                - field: "actionsystem.action.lastOutcome"
+                  type: "string"
+                - "SNC Incident created"
+      actionConfig:
+        - name: "externalRecordType"
+          type: "string"
+          value: "sncIncident"
+          title: null
+          description: null
+          fieldType: "recordTypeExternal"
+          validRecordTypes: null
+          mandatory: true
+        - name: "internalRecordType"
+          type: "string"
+          value: "alerts"
+          title: null
+          description: null
+          fieldType: "recordType"
+          validRecordTypes: null
+          mandatory: true
+      mappings: null
+      stopIf: []
+      useAdditionalRecords: null
+    - _id: "a16c4d02-1144-ea67-6924-270d62fff632"
+      name: "Update Incident ID to pending"
+      description: "Following a successful call to LMDX update the incident ID to pending"
+      schemaType: null
+      schemaVersion: null
+      actionSpecificationId: "a19a3f7d-4f5f-43aa-ab2e-e32d713ad598"
+      preconditionV2:
+        schemaName: "filterCondition"
+        schemaVersion: 4
+        expression:
+          AND:
+            - EQUALS:
+                - field: "actionsystem.action.lastOutcome"
+                  type: "string"
+                - "Rowkey stored"
+      actionConfig: []
+      mappings:
+        alertDetails.incidentId:
+          - type: "value"
+            conditionV2:
+              schemaName: "filterCondition"
+              schemaVersion: 4
+              expression:
+                AND:
+                  - EQUALS:
+                      - field: "alerts.alertDetails.incidentId"
+                        type: "string"
+                      - "requesting"
+            mappedValue: "pending"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+      stopIf:
+        - "Alert updated"
+      useAdditionalRecords: null
+    - _id: "ef077901-3daf-29a9-a887-8ddea6764822"
+      name: "Delay for 1 hour"
+      description: "Allow alerts that do not reach greater than warning to persist in dashbords for 1 hour before closing"
+      schemaType: null
+      schemaVersion: null
+      actionSpecificationId: "7db24035-1e81-48e8-a41c-80941e0aa733"
+      preconditionV2:
+        schemaName: "filterCondition"
+        schemaVersion: 4
+        expression:
+          AND:
+            - EQUALS:
+                - field: "alerts.alertDetails.workflowState"
+                  type: "string"
+                - "new"
+            - LESS_THAN_EQUAL:
+                - field: "alerts.alertDetails.worstSeverity"
+                  type: "integer"
+                - 2
+            - LESS_THAN_EQUAL:
+                - field: "alerts.alertDetails.currentSeverity"
+                  type: "integer"
+                - 2
+      actionConfig:
+        - name: "delayTime"
+          type: "number"
+          value: 3600
+          title: null
+          description: null
+          fieldType: "number"
+          validRecordTypes: null
+          mandatory: true
+      mappings: null
+      stopIf: []
+      useAdditionalRecords: null
+    - _id: "02285920-c483-aec6-d815-737169b0a5a9"
+      name: "Auto-close alerts that are not valid for ticketing and created more than 1 hour ago"
+      description: "Close any alerts that failed to reach the required ticketing severity during the correlation timeout and extended 1 hour delay"
+      schemaType: null
+      schemaVersion: null
+      actionSpecificationId: "a19a3f7d-4f5f-43aa-ab2e-e32d713ad598"
+      preconditionV2:
+        schemaName: "filterCondition"
+        schemaVersion: 4
+        expression:
+          AND:
+            - EQUALS:
+                - field: "alerts.alertDetails.workflowState"
+                  type: "string"
+                - "new"
+            - LESS_THAN_EQUAL:
+                - field: "alerts.alertDetails.worstSeverity"
+                  type: "integer"
+                - 2
+            - LESS_THAN_EQUAL:
+                - field: "alerts.alertDetails.currentSeverity"
+                  type: "integer"
+                - 2
+            - EQUALS:
+                - field: "actionsystem.action.lastOutcome"
+                  type: "string"
+                - "Delay Completed"
+            - OLDER_THAN:
+                - field: "alerts.meta.firstEventTimestamp"
+                  type: "long"
+                - duration: 1
+                  unit: "hour"
+      actionConfig: []
+      mappings:
+        alertDetails.workflowState:
+          - type: "value"
+            conditionV2: null
+            mappedValue: "closed"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+      stopIf: []
+      useAdditionalRecords: null
+    - _id: "16705f75-0895-af80-c3f4-14c59e708f1a"
+      name: "Delay for 24 hours for auto close Alert"
+      description: "Delay for 24 hours for auto close Alert - Includes Error and Criticals."
+      schemaType: null
+      schemaVersion: null
+      actionSpecificationId: "7db24035-1e81-48e8-a41c-80941e0aa733"
+      preconditionV2:
+        schemaName: "filterCondition"
+        schemaVersion: 4
+        expression:
+          AND:
+            - NOT_IN:
+                - field: "alerts.alertDetails.workflowState"
+                  type: "string"
+                -
+                  - "closed"
+                  - "correlated"
+            - GREATER_THAN:
+                - field: "alerts.alertDetails.worstSeverity"
+                  type: "integer"
+                - 2
+      actionConfig:
+        - name: "delayTime"
+          type: "number"
+          value: 86400
+          title: null
+          description: null
+          fieldType: "number"
+          validRecordTypes: null
+          mandatory: true
+      mappings: null
+      stopIf: []
+      useAdditionalRecords: null
+    - _id: "81b0e151-b5a1-25d5-e57d-80491cdc8a6f"
+      name: "Auto-close all the alerts"
+      description: "Auto-close all the alerts"
+      schemaType: null
+      schemaVersion: null
+      actionSpecificationId: "a19a3f7d-4f5f-43aa-ab2e-e32d713ad598"
+      preconditionV2:
+        schemaName: "filterCondition"
+        schemaVersion: 4
+        expression:
+          AND:
+            - EQUALS:
+                - field: "actionsystem.action.lastOutcome"
+                  type: "string"
+                - "Delay Completed"
+            - NOT_IN:
+                - field: "alerts.alertDetails.workflowState"
+                  type: "string"
+                -
+                  - "closed"
+                  - "correlated"
+            - GREATER_THAN:
+                - field: "alerts.alertDetails.worstSeverity"
+                  type: "integer"
+                - 2
+      actionConfig: []
+      mappings:
+        alertDetails.workflowState:
+          - type: "value"
+            conditionV2: null
+            mappedValue: "closed"
+            mappedVariable: null
+            mappedVariables: null
+            format: null
+      stopIf: []
+      useAdditionalRecords: null
+  uiCondition: null
+  writtenOn: 1775666715704

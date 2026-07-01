@@ -1,0 +1,123 @@
+# Step groups for the LM Alert Processing action group (v2.0 base YAML).
+# Step names must match inputs/lm_alert_processing_base.yaml exactly.
+
+step_groups:
+  - group_id: alert_intake_path
+    label: Alert intake and deduplication
+    purpose: Create or update the alert, handle scheduled downtime, and update alert state.
+    step_names:
+      - Create a new alert if there is no existing open alert to update
+      - Wait for SDT to end whilst continuing to deduplicate further events
+      - Flip to new after SDT ends if alert has not been cleared
+      - Update an existing open alert
+      - Update Singleton Alert Escalation on State Change
+    patchable_areas:
+      - preconditions
+      - action config
+      - remove_step (SDT steps)
+    question_hints:
+      - key_suffix: sdt_handling
+        question: Should scheduled downtime (SDT) steps be kept or removed?
+        example_answer: e.g. remove SDT handling
+      - key_suffix: alert_intake_rules
+        question: Any changes to alert create or update preconditions?
+        example_answer: e.g. keep default dedup
+
+  - group_id: alert_existing_incident_path
+    label: Alert to existing incident
+    purpose: Find an existing ServiceNow reference for the alert and update that incident.
+    step_names:
+      - Find a LM-DX reference for this alert
+      - Update ServiceNow Incident linked to this alert
+    patchable_areas:
+      - preconditions
+      - mappings (resolved_by, assignment_group, state)
+    question_hints:
+      - key_suffix: update_mappings
+        question: What resolved_by and assignment_group should alert incident updates use?
+        example_answer: e.g. Edwin Integration, Network Operations
+      - key_suffix: update_conditions
+        question: When should an existing alert-linked incident be updated?
+        example_answer: e.g. when incident-active
+
+  - group_id: insight_sync_path
+    label: Related insight sync
+    purpose: Keep a related insight updated, run AI summarisation, and update an existing insight incident.
+    step_names:
+      - Update associated Insight linked to this alert record (if any returned)
+      - Update Insight Escalation on State Change
+      - Summarise insights with AI
+      - Update Insight with AI Title, Summary and RCA
+      - Find a LM-DX reference for this insight
+      - Update ServiceNow Incident linked to this insight
+      - Update insight Escalation for insights that have no related incident
+    patchable_areas:
+      - preconditions
+      - mappings
+      - remove_step (AI summarise steps)
+    question_hints:
+      - key_suffix: ai_summarise
+        question: Should AI insight summarisation steps be kept or removed?
+        example_answer: e.g. remove AI summarise
+      - key_suffix: insight_update_mappings
+        question: What resolved_by and assignment_group should insight incident updates use?
+        example_answer: e.g. Edwin Integration
+
+  - group_id: insight_incident_creation_path
+    label: New insight incident
+    purpose: Create a ServiceNow incident for a serious insight, store the reference, and mark the incident ID pending.
+    step_names:
+      - Create ServiceNow Incident for this insight
+      - Store a reference to the SNC incident request
+      - Update Incident ID to pending
+    patchable_areas:
+      - preconditions
+      - mappings (caller_id, assignment_group)
+    question_hints:
+      - key_suffix: create_conditions
+        question: When should a new ServiceNow incident be created for an insight?
+        example_answer: e.g. severity 4+ when incident-active
+      - key_suffix: create_mappings
+        question: What caller_id and assignment_group should new insight incidents use?
+        example_answer: e.g. Edwin Integration
+
+  - group_id: correlation_and_alert_incident_path
+    label: Correlation delay and alert incident creation
+    purpose: Wait for correlation, escalate the alert, then create a ServiceNow incident for the alert and store the reference.
+    step_names:
+      - Delay for 15 mins to allow new alerts to correlate
+      - Update alert Escalation
+      - Create ServiceNow Incident for this alert
+      - Store a reference to the SNC incident request
+      - Update Incident ID to pending
+    patchable_areas:
+      - delays
+      - preconditions
+      - mappings (caller_id, assignment_group)
+    question_hints:
+      - key_suffix: correlation_delay
+        question: What correlation delay should be used before creating an alert incident?
+        example_answer: e.g. 15 minutes
+      - key_suffix: alert_create_rules
+        question: When should a new ServiceNow incident be created for an alert?
+        example_answer: e.g. severity 4+ when incident-active
+
+  - group_id: auto_close_and_cleanup_path
+    label: Delays, auto-close, and cleanup
+    purpose: Apply persistence delays and auto-close alerts that did not reach ticketing severity.
+    step_names:
+      - Delay for 1 hour
+      - Auto-close alerts that are not valid for ticketing and created more than 1 hour ago
+      - Delay for 24 hours for auto close Alert
+      - Auto-close all the alerts
+    patchable_areas:
+      - delays
+      - preconditions
+      - remove_step (24h delay, auto-close all)
+    question_hints:
+      - key_suffix: delay_durations
+        question: What persistence delays (1 hour, 24 hour) should be used?
+        example_answer: e.g. 1 hour and 24 hours
+      - key_suffix: auto_close_rules
+        question: When should alerts be auto-closed?
+        example_answer: e.g. low severity after 1 hour

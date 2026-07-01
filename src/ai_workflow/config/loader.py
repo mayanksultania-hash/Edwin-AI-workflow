@@ -142,7 +142,9 @@ def load_config(
         output_language=output_language,
         workflow_version=version,
         execution_mode=execution_mode,
-        enabled_tools=tuple(raw_config.get("tools", {}).get("enabled", [])),
+        enabled_tools=tuple(
+            _optional_string_list(raw_config.get("tools", {}).get("enabled", []))
+        ),
         action_catalog_source=action_catalog_source,
         action_catalog_base_url=_optional_string(action_catalog_config.get("base_url")),
         action_catalog_auth_token_env_var=_optional_string(

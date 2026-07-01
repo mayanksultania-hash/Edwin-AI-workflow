@@ -1,0 +1,112 @@
+# Reusable Action ID catalog for LM Alert Processing LLM prompts.
+# Field definitions live in field_sets.yaml and are referenced by name below.
+
+action_ids:
+  - action_name: Create SNC Incident
+    action_id: create-snc-incident
+    use_for: Create a new ServiceNow incident for an alert or insight.
+    patch_guidance: >-
+      Use set_mapping_value for ServiceNow fields. For severity/state rules on Create steps,
+      prefer add_step_precondition_conditions so lastOutcome stays in place. Patch both alert
+      and insight Create steps.
+    mapping_field_sets:
+      - servicenow_mapping
+    precondition_field_sets:
+      - alert_preconditions
+      - insight_preconditions
+    examples:
+      - "Alert create: keep lastOutcome Alert updated, then add severity >= 4 and workflowState incident-active."
+      - "Insight create: keep lastOutcome Insight updated, then add highestSeverity >= 4 and workflowState incident-active."
+      - Set caller_id on both Create ServiceNow Incident steps.
+
+  - action_name: Update SNC Incident
+    action_id: update-snc-incident
+    use_for: Update or reopen an existing ServiceNow incident linked to an alert or insight.
+    patch_guidance: >-
+      Use set_mapping_value for ServiceNow fields and set_step_precondition for reopen/resolve
+      rules. Patch both alert and insight Update steps.
+    mapping_field_sets:
+      - servicenow_mapping
+    mapping_fields:
+      - name: state
+        description: ServiceNow incident state to set.
+        example: In Progress
+      - name: close_code
+        description: Close code when resolving an incident.
+        example: Solved Remotely
+      - name: close_notes
+        description: Resolution notes when closing an incident.
+        example: Auto-resolved by Edwin
+    precondition_field_sets:
+      - alert_preconditions
+      - insight_preconditions
+    examples:
+      - Set resolved_by on Update ServiceNow Incident linked to this alert and Update ServiceNow Incident linked to this insight.
+      - Reopen incident when linked insight state is active.
+
+  - action_name: Delay Action Execution
+    action_id: delay-action-execution
+    use_for: Wait before later actions run, usually for correlation or auto-close timing.
+    patch_guidance: Use set_delay_seconds.
+    action_config_fields:
+      - name: delayTime
+        description: Delay duration in seconds.
+        example: 900
+    examples:
+      - 15 minutes is 900 seconds.
+      - 1 hour is 3600 seconds.
+      - 24 hours is 86400 seconds.
+
+  - action_name: Update Alert
+    action_id: update-alert
+    use_for: Update alert fields, escalation, state, or related incident references.
+    patch_guidance: Use set_mapping_value for alert field updates and set_action_config_value for runtime options.
+    precondition_field_sets:
+      - alert_preconditions
+    action_config_fields:
+      - name: additionalInsights
+        description: Whether related insight records should also be considered.
+        example: true
+      - name: strictOrder
+        description: Whether updates must keep strict ordering.
+        example: false
+    examples:
+      - Auto-close alert steps should use set_step_precondition, not add_step_precondition_conditions.
+      - Use OLDER_THAN on alerts.meta.firstEventTimestamp with value_type hour for age checks.
+      - Use remove_step only when the user explicitly asks to drop a step such as Summarise insights with AI.
+
+  - action_name: Update Insight
+    action_id: update-insight
+    use_for: Update insight fields, escalation, or linked incident details.
+    patch_guidance: Use set_mapping_value for insight field updates and set_step_precondition for when the update should run.
+    precondition_field_sets:
+      - insight_preconditions
+    action_config_fields:
+      - name: addAdditionalAlerts
+        description: Whether additional alerts are included when updating the insight.
+        example: true
+    examples:
+      - Use separate Update Insight steps for different conditions or target fields.
+
+  - action_name: Lookup external rowkey
+    action_id: lookup-external-rowkey
+    use_for: Find an existing external reference such as LM-DX or ServiceNow linkage.
+    patch_guidance: Usually leave this unchanged unless the user asks to change lookup behavior.
+    examples:
+      - Use before Update SNC Incident when an existing incident reference may exist.
+
+  - action_name: Store rowkey
+    action_id: store-rowkey
+    use_for: Store a reference to a created external record.
+    patch_guidance: Usually leave this unchanged unless the user asks to change stored reference fields.
+    examples:
+      - Store the ServiceNow incident request reference after creating the incident.
+
+  - action_name: Alert AI Investigation
+    action_id: alert-ai-investigation
+    use_for: Run AI investigation or enrichment for an alert.
+    patch_guidance: Use set_step_precondition if the user says when AI investigation should run.
+    precondition_field_sets:
+      - alert_preconditions
+    examples:
+      - Run only for critical alerts.

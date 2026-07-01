@@ -1,0 +1,54 @@
+# Reusable field lists for Action ID prompt guidance.
+# Referenced by name from config/action_ids/action_ids.yaml.
+
+field_sets:
+  servicenow_mapping:
+    - name: caller_id
+      description: ServiceNow caller for created incidents.
+      example: Edwin Integration
+    - name: resolved_by
+      description: User/value stored when the integration resolves an incident.
+      example: Edwin Integration
+    - name: assignment_group
+      description: ServiceNow group that owns the incident.
+      example: Network Operations
+    - name: short_description
+      description: Short incident title.
+      example: Critical router alert from LM-DX
+    - name: work_notes
+      description: Notes added to the incident timeline.
+      example: Updated by Edwin automation
+
+  alert_preconditions:
+    - name: alerts.alertDetails.currentSeverity
+      description: Current alert severity used for incident or auto-close rules.
+      example: 4
+    - name: alerts.alertDetails.worstSeverity
+      description: Highest severity seen on the alert, often used in auto-close rules.
+      example: 2
+    - name: alerts.alertDetails.workflowState
+      description: Alert workflow state used to decide whether a step runs.
+      example: incident-active
+    - name: alerts.alertDetails.alertState
+      description: Alert state such as open, closed, or acknowledged.
+      example: open
+    - name: actionsystem.action.lastOutcome
+      description: Previous step outcome, such as Delay Completed.
+      example: Delay Completed
+    - name: alerts.meta.firstEventTimestamp
+      description: Alert age check for auto-close. Use OLDER_THAN with value_type hour.
+      example: 1 hour
+
+  insight_preconditions:
+    - name: insights.ml.highestSeverity
+      description: Highest insight severity used for incident creation rules.
+      example: 4
+    - name: insights.insightDetails.workflowState
+      description: Insight workflow state, such as incident-active or new.
+      example: incident-active
+    - name: insights.meta.state
+      description: Insight meta state such as active or cleared.
+      example: active
+    - name: actionsystem.action.lastOutcome
+      description: Previous step outcome for insight flows, such as Insight updated.
+      example: Insight updated

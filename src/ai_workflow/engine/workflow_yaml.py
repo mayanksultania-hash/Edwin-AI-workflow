@@ -34,9 +34,26 @@ def write_workflow_yaml_file(workflow: Workflow, path: Path) -> None:
 
 def _parse_yaml(yaml_text: str) -> dict[str, Any]:
     if yaml:
-        return yaml.safe_load(yaml_text) or {}
+        data = yaml.safe_load(yaml_text) or {}
+        return _normalize_workflow_yaml_data(data)
 
     return _parse_simple_workflow_yaml(yaml_text)
+
+
+def _normalize_workflow_yaml_data(data: dict[str, Any]) -> dict[str, Any]:
+    workflow = data.get("workflow")
+    if not isinstance(workflow, dict):
+        return data
+
+    trigger = workflow.get("trigger")
+    if (
+        "steps" not in workflow
+        and isinstance(trigger, dict)
+        and isinstance(trigger.get("steps"), list)
+    ):
+        workflow["steps"] = trigger.pop("steps")
+
+    return data
 
 
 def _parse_simple_workflow_yaml(yaml_text: str) -> dict[str, Any]:

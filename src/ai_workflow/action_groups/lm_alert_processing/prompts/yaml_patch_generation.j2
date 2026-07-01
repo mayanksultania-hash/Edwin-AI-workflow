@@ -1,0 +1,358 @@
+LM Alert Processing YAML patch task.
+
+You are customizing this base Action Group YAML.
+Do not rewrite the full YAML.
+Return only patch instructions that deterministic Python can apply.
+
+Base YAML:
+```yaml
+{{ base_yaml }}
+```
+
+User answers:
+{% for key, answer in answers.items() %}
+- {{ key }}: {{ answer }}
+{% endfor %}
+
+Reusable Action ID schemas:
+These action schemas can appear across multiple Action Groups. Use them to choose the right patch field.
+{{ action_schema_context }}
+
+Workflow step groups:
+Each answer key starts with a group_id below (for example alert_intake_path__sdt_handling).
+When it does, only patch the steps listed in that group.
+Use the exact step names shown. This keeps patches scoped to the right stage.
+{{ step_group_context }}
+
+Rules:
+- Return patches for every user answer you can map to an allowed patch type.
+- Use exact step names from the base YAML.
+- Do not invent patch types or fields outside the lists below.
+- Prefer set_mapping_value for ServiceNow ticket fields on the four ServiceNow Incident steps only.
+- Never use set_mapping_value on Find a LM-DX reference steps. Those steps must keep mappings null.
+- Never invent mapping field names such as dummy_field or skip.
+- Prefer set_delay_seconds for delay steps.
+- Prefer set_step_precondition for auto-close rules.
+- For Create ServiceNow Incident steps, prefer add_step_precondition_conditions to add severity/state checks while keeping the existing lastOutcome guard. If you use set_step_precondition, include actionsystem.action.lastOutcome in the conditions list.
+- Use add_step_precondition_conditions only when the user explicitly asks to keep the existing start condition and add more checks.
+- If an answer does not map to any allowed patch, skip it.
+
+Map user answers to patches:
+- Keys ending in __create_conditions or __alert_create_rules -> add_step_precondition_conditions on Create ServiceNow Incident steps in that group for severity/state checks. Do not remove the existing lastOutcome guard.
+- Create ServiceNow Incident for this alert must keep lastOutcome = Alert updated.
+- Create ServiceNow Incident for this insight must keep lastOutcome = Insight updated.
+- Keys ending in __create_mappings, __update_mappings, or __insight_update_mappings -> set_mapping_value on ServiceNow steps in that group
+- Keys ending in __correlation_delay or __delay_durations -> set_delay_seconds on Delay steps in that group
+- Keys ending in __auto_close_rules -> set_step_precondition on Auto-close alerts that are not valid for ticketing and created more than 1 hour ago only
+- Keys ending in __sdt_handling, __ai_summarise, or legacy step_removal / sdt_handling / ai_processing_policy -> remove_step only when the user explicitly asks to remove or disable specific steps
+- Legacy flat keys still supported: incident_policy, servicenow_mapped_fields, delay_durations, auto_close_policy, assignment_group
+- group metadata -> set_group_name or set_group_description
+
+Remove step rules:
+- Use remove_step only when the user clearly says a step should be removed, disabled, or not used.
+- Do not remove core alert processing steps unless the user explicitly asks.
+- Each remove_step patch removes the first step with that exact step_name. Use two patches if the same name appears twice.
+- Put remove_step patches before patches that edit remaining steps.
+- Safe examples to remove only when the user asks to drop SDT, old AI summarise, or v2-only auto-close paths:
+  - Wait for SDT to end whilst continuing to deduplicate further events
+  - Flip to new after SDT ends if alert has not been cleared
+  - Summarise insights with AI
+  - Update Insight with AI Title, Summary and RCA
+  - Delay for 24 hours for auto close Alert
+  - Auto-close all the alerts
+- Never use remove_step to add new steps. remove_step only deletes existing steps.
+
+Incident creation field paths:
+- Alert create step: alerts.alertDetails.currentSeverity, alerts.alertDetails.workflowState
+- Insight create step: insights.ml.highestSeverity, insights.insightDetails.workflowState
+- Do not use insights.severity or insights.state. They are not valid field paths in this base YAML.
+
+Auto-close rules:
+- Use set_step_precondition to replace the full start condition. Do not use add_step_precondition_conditions for auto-close.
+- Patch only Auto-close alerts that are not valid for ticketing and created more than 1 hour ago.
+- Do not patch Auto-close all the alerts unless the user explicitly asks about high-severity 24-hour auto-close.
+- Include low-severity checks with alerts.alertDetails.worstSeverity and alerts.alertDetails.currentSeverity when the user mentions low severity.
+
+ServiceNow mapping rules:
+- Only patch these steps with set_mapping_value:
+  - Create ServiceNow Incident for this alert
+  - Create ServiceNow Incident for this insight
+  - Update ServiceNow Incident linked to this alert
+  - Update ServiceNow Incident linked to this insight
+- Do not patch Find a LM-DX reference for this alert or Find a LM-DX reference for this insight.
+- Allowed mapping targets: caller_id, resolved_by, assignment_group, state, priority, close_code, close_notes, short_description, work_notes, impact, urgency, category, subcategory, cmdb_ci, contact_type, description.
+- If an answer does not map to one of those fields on one of those steps, skip it.
+- Use resolved_by only on the two Update ServiceNow Incident steps, not on Create steps.
+- caller_id and assignment_group belong on Create steps. Update steps too when the user asks for assignment_group.
+
+Auto-close timing rules:
+- For alerts.meta.firstEventTimestamp age checks, use operator OLDER_THAN with value_type hour, minute, or second.
+- Example: "older than 1 hour" -> field alerts.meta.firstEventTimestamp, operator OLDER_THAN, value 1, value_type hour
+- Also use actionsystem.action.lastOutcome = Delay Completed when the user mentions waiting for a delay to finish.
+
+Common step names in this base YAML:
+- Delay for 15 mins to allow new alerts to correlate
+- Delay for 1 hour
+- Delay for 24 hours for auto close Alert
+- Create ServiceNow Incident for this alert
+- Create ServiceNow Incident for this insight
+- Update ServiceNow Incident linked to this alert
+- Update ServiceNow Incident linked to this insight
+- Update alert Escalation
+- Auto-close alerts that are not valid for ticketing and created more than 1 hour ago
+- Auto-close all the alerts
+
+Important:
+- ServiceNow fields such as caller_id, resolved_by, assignment_group, state, priority, close_code, close_notes, short_description, and work_notes are mapped fields. Use set_mapping_value for them.
+- Runtime behavior settings such as delayTime, additionalInsights, and strictOrder are actionConfig values. Use set_action_config_value for them.
+- Auto-close rules are step start conditions. Use set_step_precondition to replace them.
+- Incident creation severity/state rules are extra start checks. Use add_step_precondition_conditions on Create ServiceNow Incident steps so the existing lastOutcome guard stays in place.
+
+Allowed patch types:
+
+1. set_group_name
+{
+  "type": "set_group_name",
+  "value": "New group name"
+}
+
+2. set_group_description
+{
+  "type": "set_group_description",
+  "value": "New description"
+}
+
+3. set_delay_seconds
+{
+  "type": "set_delay_seconds",
+  "step_name": "Delay for 15 mins to allow new alerts to correlate",
+  "value": 900
+}
+
+4. set_action_config_value
+{
+  "type": "set_action_config_value",
+  "step_name": "Update an existing open alert",
+  "config_name": "strictOrder",
+  "value": false
+}
+
+5. set_mapping_value
+{
+  "type": "set_mapping_value",
+  "step_name": "Create ServiceNow Incident for this alert",
+  "target": "caller_id",
+  "value": "Edwin Integration"
+}
+
+6. set_step_precondition
+Replace the full step start condition. Use for auto-close rules, not for Create ServiceNow Incident severity/state changes.
+{
+  "type": "set_step_precondition",
+  "step_name": "Auto-close alerts that are not valid for ticketing and created more than 1 hour ago",
+  "combinator": "AND",
+  "conditions": [
+    {
+      "field": "alerts.alertDetails.workflowState",
+      "operator": "EQUALS",
+      "value": "new",
+      "value_type": "string"
+    }
+  ]
+}
+
+Alert create example when you must replace the whole condition:
+{
+  "type": "set_step_precondition",
+  "step_name": "Create ServiceNow Incident for this alert",
+  "combinator": "AND",
+  "conditions": [
+    {
+      "field": "actionsystem.action.lastOutcome",
+      "operator": "EQUALS",
+      "value": "Alert updated",
+      "value_type": "string"
+    },
+    {
+      "field": "alerts.alertDetails.currentSeverity",
+      "operator": "GREATER_THAN_EQUAL",
+      "value": 4,
+      "value_type": "integer"
+    },
+    {
+      "field": "alerts.alertDetails.workflowState",
+      "operator": "EQUALS",
+      "value": "incident-active",
+      "value_type": "string"
+    }
+  ]
+}
+
+Auto-close example with OLDER_THAN:
+{
+  "type": "set_step_precondition",
+  "step_name": "Auto-close alerts that are not valid for ticketing and created more than 1 hour ago",
+  "combinator": "AND",
+  "conditions": [
+    {
+      "field": "alerts.alertDetails.workflowState",
+      "operator": "EQUALS",
+      "value": "new",
+      "value_type": "string"
+    },
+    {
+      "field": "alerts.alertDetails.worstSeverity",
+      "operator": "LESS_THAN_EQUAL",
+      "value": 2,
+      "value_type": "integer"
+    },
+    {
+      "field": "alerts.alertDetails.currentSeverity",
+      "operator": "LESS_THAN_EQUAL",
+      "value": 2,
+      "value_type": "integer"
+    },
+    {
+      "field": "actionsystem.action.lastOutcome",
+      "operator": "EQUALS",
+      "value": "Delay Completed",
+      "value_type": "string"
+    },
+    {
+      "field": "alerts.meta.firstEventTimestamp",
+      "operator": "OLDER_THAN",
+      "value": 1,
+      "value_type": "hour"
+    }
+  ]
+}
+
+Insight create example:
+{
+  "type": "add_step_precondition_conditions",
+  "step_name": "Create ServiceNow Incident for this insight",
+  "combinator": "AND",
+  "conditions": [
+    {
+      "field": "insights.ml.highestSeverity",
+      "operator": "GREATER_THAN_EQUAL",
+      "value": 4,
+      "value_type": "integer"
+    },
+    {
+      "field": "insights.insightDetails.workflowState",
+      "operator": "EQUALS",
+      "value": "incident-active",
+      "value_type": "string"
+    }
+  ]
+}
+
+7. add_step_precondition_conditions
+Keep the existing step start condition and add more checks. Preferred for Create ServiceNow Incident severity/state rules.
+{
+  "type": "add_step_precondition_conditions",
+  "step_name": "Create ServiceNow Incident for this alert",
+  "combinator": "AND",
+  "conditions": [
+    {
+      "field": "alerts.alertDetails.currentSeverity",
+      "operator": "GREATER_THAN_EQUAL",
+      "value": 4,
+      "value_type": "integer"
+    },
+    {
+      "field": "alerts.alertDetails.workflowState",
+      "operator": "EQUALS",
+      "value": "incident-active",
+      "value_type": "string"
+    }
+  ]
+}
+
+8. remove_step
+Remove one existing step from the workflow by exact step name.
+{
+  "type": "remove_step",
+  "step_name": "Summarise insights with AI"
+}
+
+Example output:
+{
+  "summary": "Set delays, ServiceNow mappings, and incident creation conditions from customer answers",
+  "patches": [
+    {
+      "type": "set_delay_seconds",
+      "step_name": "Delay for 15 mins to allow new alerts to correlate",
+      "value": 900
+    },
+    {
+      "type": "set_mapping_value",
+      "step_name": "Create ServiceNow Incident for this alert",
+      "target": "caller_id",
+      "value": "Edwin Integration"
+    },
+    {
+      "type": "set_mapping_value",
+      "step_name": "Create ServiceNow Incident for this insight",
+      "target": "caller_id",
+      "value": "Edwin Integration"
+    },
+    {
+      "type": "set_mapping_value",
+      "step_name": "Update ServiceNow Incident linked to this alert",
+      "target": "resolved_by",
+      "value": "Edwin Integration"
+    },
+    {
+      "type": "set_mapping_value",
+      "step_name": "Update ServiceNow Incident linked to this insight",
+      "target": "resolved_by",
+      "value": "Edwin Integration"
+    },
+    {
+      "type": "add_step_precondition_conditions",
+      "step_name": "Create ServiceNow Incident for this alert",
+      "combinator": "AND",
+      "conditions": [
+        {
+          "field": "alerts.alertDetails.currentSeverity",
+          "operator": "GREATER_THAN_EQUAL",
+          "value": 4,
+          "value_type": "integer"
+        },
+        {
+          "field": "alerts.alertDetails.workflowState",
+          "operator": "EQUALS",
+          "value": "incident-active",
+          "value_type": "string"
+        }
+      ]
+    },
+    {
+      "type": "add_step_precondition_conditions",
+      "step_name": "Create ServiceNow Incident for this insight",
+      "combinator": "AND",
+      "conditions": [
+        {
+          "field": "insights.ml.highestSeverity",
+          "operator": "GREATER_THAN_EQUAL",
+          "value": 4,
+          "value_type": "integer"
+        },
+        {
+          "field": "insights.insightDetails.workflowState",
+          "operator": "EQUALS",
+          "value": "incident-active",
+          "value_type": "string"
+        }
+      ]
+    }
+  ]
+}
+
+Return JSON only with this shape:
+{
+  "summary": "short summary of the customization",
+  "patches": []
+}
